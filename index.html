@@ -1,0 +1,2889 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Jurnal Mengajar & Absensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+        }
+        .modal {
+            backdrop-filter: blur(4px);
+        }
+        /* Style untuk scrollbar di navigasi tab mobile */
+        .mobile-nav-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .mobile-nav-scroll {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Login Page -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md mx-4">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">SD IT NURUL KAUTSAR</h1>
+                <p class="text-gray-600">Jurnal Mengajar & Absensi Siswa</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan username">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan password">
+                        <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700">
+                            <svg id="eyeIcon" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            <svg id="eyeOffIcon" class="h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                    Masuk
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-wrap justify-between items-center py-3 gap-2">
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard Admin</h1>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                        Keluar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white border-b">
+            <nav class="px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-4 sm:space-x-8 overflow-x-auto mobile-nav-scroll -mb-px">
+                    <button onclick="showAdminTab('rekap-jurnal')" class="admin-tab py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium whitespace-nowrap">
+                        Rekap Jurnal
+                    </button>
+                    <button onclick="showAdminTab('rekap-absen')" class="admin-tab py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                        Rekap Absen
+                    </button>
+                    <button onclick="showAdminTab('panel-admin')" class="admin-tab py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                        Panel Admin
+                    </button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Admin Content -->
+        <div class="p-4 sm:p-6 lg:p-8">
+            <!-- Rekap Jurnal Tab -->
+            <div id="admin-rekap-jurnal" class="admin-content">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4">Rekap Jurnal Mengajar</h2>
+                    
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-4 mb-6">
+                        <select id="adminJurnalFilter" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <option value="harian">Harian</option>
+                            <option value="mingguan">Mingguan</option>
+                            <option value="bulanan">Bulanan</option>
+                        </select>
+                        <select id="adminJurnalGuru" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <option value="">Semua Guru</option>
+                        </select>
+                        <input type="date" id="adminJurnalDate" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                        <input type="month" id="adminJurnalMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        <select id="adminJurnalWeek" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                            <option value="">Pilih Minggu</option>
+                            <option value="1">Minggu 1</option>
+                            <option value="2">Minggu 2</option>
+                            <option value="3">Minggu 3</option>
+                            <option value="4">Minggu 4</option>
+                            <option value="5">Minggu 5</option>
+                        </select>
+                        <button onclick="filterAdminJurnal()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                            Filter
+                        </button>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="printAdminJurnal()" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                PDF
+                            </button>
+                            <button onclick="downloadAdminJurnalCSV()" class="flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+                                CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table id="adminJurnalFullTable" class="min-w-full table-auto border border-gray-300">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Guru</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Kelas</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Jam Ke</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Materi</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Aktivitas</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Izin</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Sakit</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Tanpa Ket</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminJurnalTable" class="bg-white divide-y divide-gray-200">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Statistik Jam Mengajar Guru -->
+                    <div id="teacherHoursStats" class="mt-8 bg-white rounded-lg p-4 sm:p-6 border">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Statistik Jam Mengajar (Sesuai Filter)</h3>
+                        <div class="flex gap-2 mb-4">
+                            <button onclick="printTeacherHoursPDF()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                PDF
+                            </button>
+                            <button onclick="downloadTeacherHoursExcel()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                                Excel
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table id="teacherHoursStatsTable" class="min-w-full table-auto">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Nama Guru</th>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Total Jam Mengajar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teacherHoursTable" class="divide-y divide-gray-200">
+                                    <!-- Statistik akan dimuat di sini -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rekap Absen Tab -->
+            <div id="admin-rekap-absen" class="admin-content hidden">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4">Rekap Absensi Siswa</h2>
+                    
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-4 mb-6">
+                        <select id="adminAbsenFilter" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <option value="harian">Harian</option>
+                            <option value="bulanan">Bulanan</option>
+                            <option value="tahunan">Tahunan</option>
+                        </select>
+                        <select id="adminAbsenKelas" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <option value="">Semua Kelas</option>
+                        </select>
+                        <input type="date" id="adminAbsenDay" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                        <input type="month" id="adminAbsenMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        <select id="adminAbsenFromMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                            <option value="7">Juli</option>
+                            <option value="8">Agustus</option>
+                            <option value="9">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                            <option value="1">Januari</option>
+                            <option value="2">Februari</option>
+                            <option value="3">Maret</option>
+                            <option value="4">April</option>
+                            <option value="5">Mei</option>
+                            <option value="6">Juni</option>
+                        </select>
+                        <select id="adminAbsenFromYear" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        </select>
+                        <span id="adminAbsenToLabel" class="px-2 py-2 text-sm text-gray-600 hidden">hingga</span>
+                        <select id="adminAbsenToMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                            <option value="7">Juli</option>
+                            <option value="8">Agustus</option>
+                            <option value="9">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                            <option value="1">Januari</option>
+                            <option value="2">Februari</option>
+                            <option value="3">Maret</option>
+                            <option value="4">April</option>
+                            <option value="5">Mei</option>
+                            <option value="6">Juni</option>
+                        </select>
+                        <select id="adminAbsenToYear" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        </select>
+                        <button onclick="filterAdminAbsen()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                            Filter
+                        </button>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="printAdminAbsen()" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                PDF
+                            </button>
+                            <button onclick="downloadAdminAbsenExcel()" class="flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+                                Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table id="adminAbsenFullTable" class="min-w-full table-auto border border-gray-300">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">No</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">NISN</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Nama</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Kelas</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Hadir</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Izin</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Sakit</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Tanpa Ket</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Persentase</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminAbsenTable" class="bg-white divide-y divide-gray-200">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Admin Tab -->
+            <div id="admin-panel-admin" class="admin-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Pengaturan Sistem -->
+                    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                        <h3 class="text-lg font-semibold mb-4">Pengaturan Sistem</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Semester & Tahun Ajaran</label>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <select id="semester" class="flex-1 px-3 py-2 border rounded-lg">
+                                        <option value="ganjil">Semester Ganjil</option>
+                                        <option value="genap">Semester Genap</option>
+                                    </select>
+                                    <input type="text" id="tahunAjaran" placeholder="2023/2024" class="flex-1 px-3 py-2 border rounded-lg">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nama Kepala Sekolah</label>
+                                <input type="text" id="kepalaSekolah" placeholder="Nama Kepala Sekolah" class="w-full px-3 py-2 border rounded-lg">
+                            </div>
+                            
+                            <button onclick="saveSystemSettings()" class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                                Simpan Pengaturan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manajemen Pengguna -->
+                    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                        <h3 class="text-lg font-semibold mb-4">Manajemen Pengguna</h3>
+                        
+                        <button onclick="showUserModal()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 mb-4">
+                            Tambah Pengguna
+                        </button>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full table-auto border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Username</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Role</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTable" class="bg-white divide-y divide-gray-200">
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Manajemen Siswa -->
+                    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                        <h3 class="text-lg font-semibold mb-4">Manajemen Siswa</h3>
+                        
+                        <div class="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+                            <button onclick="showStudentModal()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                Tambah
+                            </button>
+                            <button onclick="importFromGoogleSheet()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                                Impor
+                            </button>
+                            <button onclick="showPromoteModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                                Naik/Turun Kelas
+                            </button>
+                            <div class="flex items-center gap-2 border-l pl-4 flex-wrap">
+                                <select id="deleteStudentClassFilter" class="px-3 py-2 border rounded-lg">
+                                    <option value="">Kelas</option>
+                                </select>
+                                <button onclick="deleteStudentsByClass()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                                    Hapus
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                             <label for="studentClassFilter" class="mr-2 text-sm font-medium">Filter Tampilan:</label>
+                            <select id="studentClassFilter" onchange="filterStudents()" class="px-3 py-2 border rounded-lg">
+                                <option value="">Semua Kelas</option>
+                            </select>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full table-auto border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">NISN</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Nama</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Kelas</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentTable" class="bg-white divide-y divide-gray-200">
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Manajemen Kelas -->
+                    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                        <h3 class="text-lg font-semibold mb-4">Manajemen Kelas</h3>
+                        <div id="totalStudentCountDisplay" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+                            Total Seluruh Siswa: <span id="totalStudentCount" class="font-bold">0</span>
+                        </div>
+                        <button onclick="showClassModal()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 mb-4">
+                            Tambah Kelas
+                        </button>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full table-auto border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Nama Kelas</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Jumlah Siswa</th>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classTable" class="bg-white divide-y divide-gray-200">
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Dashboard -->
+    <div id="teacherDashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b sticky top-0 z-10">
+            <div class="px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-wrap justify-between items-center py-3 gap-2">
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard Guru</h1>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                        Keluar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white border-b">
+            <nav class="px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-4 sm:space-x-8 overflow-x-auto mobile-nav-scroll -mb-px">
+                    <button onclick="showTeacherTab('input-jurnal')" class="teacher-tab py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium whitespace-nowrap">
+                        Input Jurnal
+                    </button>
+                    <button onclick="showTeacherTab('input-absen')" class="teacher-tab py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                        Input Absen
+                    </button>
+                    <button onclick="showTeacherTab('rekap-jurnal')" class="teacher-tab py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                        Rekap Jurnal
+                    </button>
+                    <button onclick="showTeacherTab('rekap-absen')" class="teacher-tab py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap">
+                        Rekap Absen
+                    </button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Teacher Content -->
+        <div class="p-4 sm:p-6 lg:p-8">
+            <!-- Input Jurnal Tab -->
+            <div id="teacher-input-jurnal" class="teacher-content">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4">Input Jurnal Mengajar</h2>
+                    
+                    <form id="jurnalForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Tanggal *</label>
+                                <input type="date" id="jurnalTanggal" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" onchange="updateJurnalAbsenRekap()">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Kelas *</label>
+                                <select id="jurnalKelas" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" onchange="updateJurnalAbsenRekap()">
+                                    <option value="">Pilih Kelas</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Jam Ke *</label>
+                                <input type="text" id="jurnalJam" required placeholder="Contoh: 1-2, 3, 4-5" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Materi yang Diajarkan *</label>
+                            <textarea id="jurnalMateri" required rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Materi yang diajarkan..."></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Aktivitas Selama Pembelajaran *</label>
+                            <textarea id="jurnalAktivitas" required rows="3" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Deskripsikan aktivitas pembelajaran..."></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Izin</label>
+                                <input type="number" id="jurnalIzin" min="0" value="0" class="w-full px-3 py-2 border rounded-lg bg-gray-100" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Sakit</label>
+                                <input type="number" id="jurnalSakit" min="0" value="0" class="w-full px-3 py-2 border rounded-lg bg-gray-100" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Tanpa Keterangan</label>
+                                <input type="number" id="jurnalTanpaKet" min="0" value="0" class="w-full px-3 py-2 border rounded-lg bg-gray-100" readonly>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                            Simpan Jurnal
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-sm text-yellow-800">
+                            <strong>Catatan:</strong><br>
+                            1. Field * wajib diisi<br>
+                            2. Harap input jurnal per mapel
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Absen Tab -->
+            <div id="teacher-input-absen" class="teacher-content hidden">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4">Input Absensi Siswa</h2>
+                    
+                    <div class="mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Tanggal</label>
+                                <input type="date" id="absenTanggal" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Kelas</label>
+                                <select id="absenKelas" onchange="loadStudentsForAbsen()" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Pilih Kelas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="absenStudentList" class="space-y-4">
+                        <!-- Student list will be populated here -->
+                    </div>
+                    
+                    <button onclick="saveAbsensi()" class="mt-6 w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                        Simpan Absensi
+                    </button>
+                    
+                    <!-- Daftar Absensi yang Sudah Diinput -->
+                    <div class="mt-8 border-t pt-6">
+                        <h3 class="text-lg font-semibold mb-4">Daftar Absensi yang Sudah Diinput</h3>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                            <select id="absensiInputFilter" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                                <option value="all">Semua</option>
+                                <option value="harian">Harian</option>
+                                <option value="bulanan">Bulanan</option>
+                            </select>
+                            <input type="date" id="absensiInputTanggal" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <input type="month" id="absensiInputBulan" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                            <button onclick="filterDaftarAbsensi()" class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded-lg">Filter</button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full table-auto border border-gray-300">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Tanggal</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Kelas</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Jumlah Siswa</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceListTable" class="bg-white divide-y divide-gray-200">
+                                    <!-- Data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rekap Jurnal Tab -->
+            <div id="teacher-rekap-jurnal" class="teacher-content hidden">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4">Rekap Jurnal Mengajar</h2>
+                    
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-4 mb-6">
+                        <select id="teacherJurnalFilter" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <option value="harian">Harian</option>
+                            <option value="mingguan">Mingguan</option>
+                            <option value="bulanan">Bulanan</option>
+                        </select>
+                        <input type="date" id="teacherJurnalDate" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                        <input type="month" id="teacherJurnalMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        <select id="teacherJurnalWeek" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                            <option value="">Pilih Minggu</option>
+                            <option value="1">Minggu 1</option>
+                            <option value="2">Minggu 2</option>
+                            <option value="3">Minggu 3</option>
+                            <option value="4">Minggu 4</option>
+                            <option value="5">Minggu 5</option>
+                        </select>
+                        <button onclick="filterTeacherJurnal()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                            Filter
+                        </button>
+                        <button onclick="printTeacherJurnal()" class="w-full sm:w-auto bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+                            PDF
+                        </button>
+                    </div>
+
+                    <!-- Statistik Jam Mengajar Bulanan -->
+                    <div id="teacherMonthlyStats" class="mb-6 bg-white p-4 border rounded-lg shadow">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Statistik Jam Mengajar</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full table-auto">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Bulan</th>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Total Jam</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teacherMonthlyStatsTable" class="divide-y divide-gray-200">
+                                    <!-- Data akan dimuat lewat JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full table-auto border border-gray-300">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Kelas</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Jam Ke</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Materi</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Aktivitas</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Izin</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Sakit</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Tanpa Ket</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacherJurnalTable" class="bg-white divide-y divide-gray-200">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rekap Absen Tab -->
+            <div id="teacher-rekap-absen" class="teacher-content hidden">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                    <h2 class="text-xl font-semibold mb-4">Rekap Absensi Siswa</h2>
+                    
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-4 mb-6">
+                        <select id="teacherAbsenFilter" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <option value="harian">Harian</option>
+                            <option value="bulanan">Bulanan</option>
+                            <option value="tahunan">Tahunan</option>
+                        </select>
+                        <select id="teacherAbsenKelas" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                            <option value="">Pilih Kelas</option>
+                        </select>
+                        <input type="date" id="teacherAbsenDay" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                        <input type="month" id="teacherAbsenMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        <select id="teacherAbsenFromMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                            <option value="7">Juli</option>
+                            <option value="8">Agustus</option>
+                            <option value="9">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                            <option value="1">Januari</option>
+                            <option value="2">Februari</option>
+                            <option value="3">Maret</option>
+                            <option value="4">April</option>
+                            <option value="5">Mei</option>
+                            <option value="6">Juni</option>
+                        </select>
+                        <select id="teacherAbsenFromYear" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        </select>
+                        <span id="teacherAbsenToLabel" class="px-2 py-2 text-sm text-gray-600 hidden">hingga</span>
+                        <select id="teacherAbsenToMonth" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                            <option value="7">Juli</option>
+                            <option value="8">Agustus</option>
+                            <option value="9">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                            <option value="1">Januari</option>
+                            <option value="2">Februari</option>
+                            <option value="3">Maret</option>
+                            <option value="4">April</option>
+                            <option value="5">Mei</option>
+                            <option value="6">Juni</option>
+                        </select>
+                        <select id="teacherAbsenToYear" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
+                        </select>
+                        <button onclick="filterTeacherAbsen()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                            Filter
+                        </button>
+                        <button onclick="printTeacherAbsen()" class="w-full sm:w-auto bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+                            PDF
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full table-auto border border-gray-300">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">No</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">NISN</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Nama</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Hadir</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Izin</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Sakit</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Tanpa Ket</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-300">Persentase</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacherAbsenTable" class="bg-white divide-y divide-gray-200">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- User Modal -->
+    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Tambah/Edit Pengguna</h3>
+            <form id="userForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Nama Lengkap</label>
+                        <input type="text" id="userFullName" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Username</label>
+                        <input type="text" id="userUsername" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Password</label>
+                        <input type="password" id="userPassword" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Role</label>
+                        <select id="userRole" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="admin">Admin</option>
+                            <option value="guru">Guru</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                        Simpan
+                    </button>
+                    <button type="button" onclick="closeUserModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Modal -->
+    <div id="studentModal" class="fixed inset-0 bg-black bg-opacity-50 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Tambah/Edit Siswa</h3>
+            <form id="studentForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">NISN</label>
+                        <input type="text" id="studentNISN" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Nama Lengkap</label>
+                        <input type="text" id="studentName" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Kelas</label>
+                        <select id="studentClass" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="">Pilih Kelas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                        Simpan
+                    </button>
+                    <button type="button" onclick="closeStudentModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Class Modal -->
+    <div id="classModal" class="fixed inset-0 bg-black bg-opacity-50 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Tambah/Edit Kelas</h3>
+            <form id="classForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Nama Kelas</label>
+                        <input type="text" id="className" placeholder="Contoh: 1A" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                        Simpan
+                    </button>
+                    <button type="button" onclick="closeClassModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Promote Modal -->
+    <div id="promoteModal" class="fixed inset-0 bg-black bg-opacity-50 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Naik/Turun Kelas</h3>
+            <form id="promoteForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Dari Kelas</label>
+                        <select id="promoteFromClass" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="">Pilih Kelas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Ke Kelas</label>
+                        <select id="promoteToClass" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="">Pilih Kelas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                        Pindahkan
+                    </button>
+                    <button type="button" onclick="closePromoteModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-4">Konfirmasi</h3>
+            <p id="confirmMessage" class="mb-6"></p>
+            <div class="flex gap-2">
+                <button id="confirmYes" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                    Ya
+                </button>
+                <button id="confirmNo" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Detail Modal -->
+    <div id="attendanceDetailModal" class="fixed inset-0 bg-black bg-opacity-50 modal hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 id="attendanceDetailTitle" class="text-lg font-semibold mb-4">Detail Absensi</h3>
+            <div id="attendanceDetailList" class="max-h-80 overflow-y-auto mb-6">
+                <!-- Details will be populated here -->
+            </div>
+            <div class="flex justify-end">
+                <button onclick="closeAttendanceDetailModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = JSON.parse(
+            typeof __firebase_config !== "undefined"
+                ? __firebase_config
+                : '{ "apiKey": "AIzaSyBf-RUcRbPAUu2FW0PEc6DCTatCuXI5TLo", "authDomain": "jurnaldanabsen.firebaseapp.com", "projectId": "jurnaldanabsen" }'
+        );
+        const appId = typeof __app_id !== "undefined" ? __app_id : "jurnal-absensi-sekolah";
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Global variables
+        let currentUser = null;
+        let currentRole = null;
+        let editingId = null;
+        let editingJournalId = null;
+        let lastJurnalData = {};
+
+        // Local state (will be synced with Firestore)
+        let users = [];
+        let classes = [];
+        let students = [];
+        let journals = [];
+        let attendance = [];
+        let systemSettings = {};
+        
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('confirmNo').addEventListener('click', closeConfirmModal);
+            
+            // Password toggle functionality
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                eyeIcon.classList.toggle('hidden');
+                eyeOffIcon.classList.toggle('hidden');
+            });
+        });
+
+        // --- UTILITY FUNCTIONS ---
+        function formatDateToDDMMYYYY(dateStr) {
+            if (!dateStr || typeof dateStr !== 'string' || !dateStr.includes('-')) return dateStr;
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            const [year, month, day] = parts;
+            return `${day}/${month}/${year}`;
+        }
+        
+        // --- AUTO-LOGIN ---
+        function checkAutoLogin() {
+            const storedUserJSON = localStorage.getItem('currentUser');
+            if (storedUserJSON) {
+                const storedUser = JSON.parse(storedUserJSON);
+                const userExists = users.find(u => u.username === storedUser.username && u.password === storedUser.password);
+
+                if (userExists) {
+                    currentUser = userExists.username;
+                    currentRole = userExists.role;
+                    document.getElementById('loginPage').classList.add('hidden');
+                    if (userExists.role === 'admin') {
+                        document.getElementById('adminDashboard').classList.remove('hidden');
+                        initializeAdminDashboard();
+                    } else {
+                        document.getElementById('teacherDashboard').classList.remove('hidden');
+                        initializeTeacherDashboard();
+                    }
+                    showNotification(`Selamat datang kembali, ${userExists.fullName}!`);
+                } else {
+                    localStorage.removeItem('currentUser');
+                }
+            }
+        }
+
+        // --- AUTHENTICATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log("User is signed in:", user.uid);
+                await loadInitialData();
+                checkAutoLogin();
+            } else {
+                console.log("User is signed out. Signing in anonymously.");
+                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                        console.log("Signed in with custom token.");
+                    } catch (error) {
+                        console.error("Custom token sign-in failed, trying anonymous:", error);
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+            }
+        });
+
+
+        // --- DATA HANDLING ---
+        async function loadInitialData() {
+            await seedInitialDataIfNeeded();
+
+            const usersCollection = collection(db, `artifacts/${appId}/public/data/users`);
+            const classesCollection = collection(db, `artifacts/${appId}/public/data/classes`);
+            const studentsCollection = collection(db, `artifacts/${appId}/public/data/students`);
+            const journalsCollection = collection(db, `artifacts/${appId}/public/data/journals`);
+            const attendanceCollection = collection(db, `artifacts/${appId}/public/data/attendance`);
+            const settingsDoc = doc(db, `artifacts/${appId}/public/data/settings/main`);
+
+            try {
+                const initialUserSnapshot = await getDocs(usersCollection);
+                users = initialUserSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+            } catch (error) {
+                console.error("Error fetching initial users:", error);
+                showNotification("Gagal memuat daftar pengguna.", "error");
+            }
+
+            onSnapshot(journalsCollection, (snapshot) => {
+                journals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentUser) {
+                    if (currentRole === 'admin') loadAdminJurnal();
+                    else if (currentRole === 'guru') loadTeacherJurnal();
+                }
+            });
+
+            onSnapshot(attendanceCollection, (snapshot) => {
+                attendance = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentUser) {
+                    if (currentRole === 'admin') loadAdminAbsen();
+                     else if (currentRole === 'guru') {
+                        filterDaftarAbsensi(); // Use filter function to respect current filters
+                        loadTeacherAbsen();
+                    }
+                }
+            });
+
+            onSnapshot(usersCollection, (snapshot) => {
+                users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentRole === 'admin') loadUserTable();
+            });
+            
+            onSnapshot(classesCollection, (snapshot) => {
+                classes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentRole === 'admin') {
+                    loadClassTable();
+                }
+                populateClassDropdowns(); 
+            });
+
+            onSnapshot(studentsCollection, (snapshot) => {
+                students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentRole === 'admin') {
+                    loadStudentTable();
+                    updateTotalStudentCount();
+                }
+            });
+
+            onSnapshot(settingsDoc, (docSnap) => {
+                if (docSnap.exists()) {
+                    systemSettings = docSnap.data();
+                }
+            });
+        }
+        
+        async function seedInitialDataIfNeeded() {
+            const usersRef = collection(db, `artifacts/${appId}/public/data/users`);
+            const q = query(usersRef);
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                console.log("No users found. Seeding initial admin/teacher data...");
+                const batch = writeBatch(db);
+                
+                 const defaultUsers = [
+                    { id: 'admin', fullName: 'Administrator', username: 'admin', password: 'admin', role: 'admin' },
+                    { id: 'indah', fullName: 'Indah Sari, S.Pd., M.Pd.', username: 'indah', password: 'guru', role: 'guru' },
+                    { id: 'vivi', fullName: 'Vivi Angraeni, S.Pd.', username: 'vivi', password: 'guru', role: 'guru' },
+                    { id: 'wahdania', fullName: 'Wahdania, S.Pd.', username: 'wahdania', password: 'guru', role: 'guru' },
+                    { id: 'nur_fitriani', fullName: 'Nur Fitriani, S.Pd.I', username: 'nur_fitriani', password: 'guru', role: 'guru' },
+                    { id: 'anriana', fullName: 'Anriana, S.Pd.', username: 'anriana', password: 'guru', role: 'guru' },
+                    { id: 'nur_asura', fullName: 'Nur Asura, S.Pd.', username: 'nur_asura', password: 'guru', role: 'guru' },
+                    { id: 'muhammad_rate', fullName: 'Muhammad Rate, S.Pd.', username: 'muhammad_rate', password: 'guru', role: 'guru' },
+                    { id: 'sri_indriani', fullName: 'Sri Indriani, S.Pd., Gr.', username: 'sri_indriani', password: 'guru', role: 'guru' },
+                    { id: 'zahra', fullName: 'Zahra Karimah Tunnisa, S.Pd.', username: 'zahra', password: 'guru', role: 'guru' },
+                    { id: 'nur_ariani', fullName: 'Nur Ariani Amir, S.Pd.', username: 'nur_ariani', password: 'guru', role: 'guru' },
+                    { id: 'siswandi', fullName: 'Siswandi Zikrullah', username: 'siswandi', password: 'guru', role: 'guru' },
+                    { id: 'la_ode', fullName: 'La Ode Hermawan Rauf, S.Pd.', username: 'la_ode', password: 'guru', role: 'guru' },
+                    { id: 'hasanuddin', fullName: 'Hasanuddin, S.Pd.', username: 'hasanuddin', password: 'guru', role: 'guru' },
+                    { id: 'haaniyah', fullName: 'Haaniyah Bintu Kasman, S.Pd.', username: 'haaniyah', password: 'guru', role: 'guru' },
+                    { id: 'darmawati', fullName: 'Darmawati Saleh, S.Pd.', username: 'darmawati', password: 'guru', role: 'guru' },
+                    { id: 'alimin', fullName: 'M. Alimin, S.Pd.I.', username: 'alimin', password: 'guru', role: 'guru' },
+                    { id: 'soekarno', fullName: 'Soekarno, S.Pd.', username: 'soekarno', password: 'guru', role: 'guru' },
+                    { id: 'sumarni', fullName: 'Sumarni, S.Pd.', username: 'sumarni', password: 'guru', role: 'guru' },
+                    { id: 'nurfatia', fullName: 'Nurfatia, S.Hum.', username: 'nurfatia', password: 'guru', role: 'guru' },
+                    { id: 'asrar', fullName: 'Muhammad Asrar Idrus, S.Pd.', username: 'asrar', password: 'guru', role: 'guru' },
+                    { id: 'sri_nikmayanti', fullName: 'Sri Nikmayanti, S.Pd.', username: 'sri_nikmayanti', password: 'guru', role: 'guru' },
+                    { id: 'rusdi', fullName: 'Muhammad Rusdi Syam, S.E.', username: 'rusdi', password: 'guru', role: 'guru' },
+                    { id: 'fadillah_musfira', fullName: 'Nur Fadillah Musfira, S.Pd.', username: 'fadillah_musfira', password: 'guru', role: 'guru' },
+                    { id: 'kasman', fullName: 'Kasman S.Pd.I.', username: 'kasman', password: 'guru', role: 'guru' },
+                    { id: 'anshar', fullName: 'M. Anshar Gaffar, S.Sos.', username: 'anshar', password: 'guru', role: 'guru' },
+                    { id: 'alwi', fullName: 'Alwi Firsadi, S.Kom.', username: 'alwi', password: 'guru', role: 'guru' },
+					{ id: 'rosnina', fullName: 'Rosnina Ruslan S.Pd.', username: 'rosnina', password: 'guru', role: 'guru' },
+					{ id: 'rifka', fullName: 'Rifka Mulyani Jamil, S.Pd.', username: 'rifka', password: 'guru', role: 'guru' },
+                    { id: 'fifin', fullName: 'A. Fifin Kamriani, S.P.', username: 'fifin', password: 'guru', role: 'guru' }
+                ];
+
+                defaultUsers.forEach(user => {
+                    const docRef = doc(usersRef, user.username); 
+                    batch.set(docRef, user);
+                });
+
+                await batch.commit();
+                console.log("Initial user data has been seeded.");
+            }
+        }
+        
+        // --- UI & LOGIC ---
+        
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 shadow-lg animate-pulse`;
+            if (type === 'success') {
+                notification.classList.add('bg-green-500');
+            } else {
+                notification.classList.add('bg-red-500');
+            }
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('animate-pulse');
+                setTimeout(() => {
+                    notification.remove();
+                }, 2500);
+            }, 500);
+        }
+
+        function showConfirmation(message, callback) {
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmModal').classList.remove('hidden');
+            document.getElementById('confirmModal').classList.add('flex');
+            
+            document.getElementById('confirmYes').onclick = () => {
+                callback();
+                closeConfirmModal();
+            };
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            document.getElementById('confirmModal').classList.remove('flex');
+        }
+        window.closeConfirmModal = closeConfirmModal;
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showNotification('Username dan password harus diisi!', 'error');
+                return;
+            }
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                currentUser = user.username;
+                currentRole = user.role;
+                
+                document.getElementById('loginPage').classList.add('hidden');
+                
+                if (user.role === 'admin') {
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    initializeAdminDashboard();
+                } else {
+                    document.getElementById('teacherDashboard').classList.remove('hidden');
+                    initializeTeacherDashboard();
+                }
+                
+                showNotification(`Selamat datang, ${user.fullName}!`);
+            } else {
+                showNotification('Username atau password salah!', 'error');
+            }
+        });
+
+        window.logout = function() {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            currentRole = null;
+            
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('teacherDashboard').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            
+            document.getElementById('loginForm').reset();
+        }
+
+        function initializeAdminDashboard() {
+            populateClassDropdowns();
+            populateTeacherDropdowns();
+            populateYearDropdowns();
+            
+            const today = new Date();
+            const todayString = today.toISOString().slice(0, 10);
+            const thisMonth = today.toISOString().slice(0, 7);
+
+            document.getElementById('adminJurnalDate').value = todayString;
+            document.getElementById('adminJurnalMonth').value = thisMonth;
+            document.getElementById('adminAbsenDay').value = todayString;
+            document.getElementById('adminAbsenMonth').value = thisMonth;
+
+            loadAdminJurnal();
+            loadAdminAbsen();
+            loadUserTable();
+            loadStudentTable();
+            loadClassTable();
+            loadSystemSettings();
+            
+            document.getElementById('adminJurnalFilter').addEventListener('change', function() {
+                const dateInput = document.getElementById('adminJurnalDate');
+                const monthInput = document.getElementById('adminJurnalMonth');
+                const weekSelect = document.getElementById('adminJurnalWeek');
+                
+                dateInput.classList.toggle('hidden', this.value !== 'harian');
+                monthInput.classList.toggle('hidden', this.value === 'harian');
+                weekSelect.classList.toggle('hidden', this.value !== 'mingguan');
+            });
+            
+            document.getElementById('adminAbsenFilter').addEventListener('change', function() {
+                const isHarian = this.value === 'harian';
+                const isBulanan = this.value === 'bulanan';
+                const isTahunan = this.value === 'tahunan';
+
+                document.getElementById('adminAbsenDay').classList.toggle('hidden', !isHarian);
+                document.getElementById('adminAbsenMonth').classList.toggle('hidden', !isBulanan);
+                document.getElementById('adminAbsenFromMonth').classList.toggle('hidden', !isTahunan);
+                document.getElementById('adminAbsenFromYear').classList.toggle('hidden', !isTahunan);
+                document.getElementById('adminAbsenToLabel').classList.toggle('hidden', !isTahunan);
+                document.getElementById('adminAbsenToMonth').classList.toggle('hidden', !isTahunan);
+                document.getElementById('adminAbsenToYear').classList.toggle('hidden', !isTahunan);
+            });
+        }
+        
+        function populateTeacherDropdowns() {
+            const dropdown = document.getElementById('adminJurnalGuru');
+            if (dropdown) {
+                dropdown.innerHTML = '<option value="">Semua Guru</option>';
+                users.filter(u => u.role === 'guru').sort((a,b) => a.fullName.localeCompare(b.fullName)).forEach(guru => {
+                    dropdown.innerHTML += `<option value="${guru.username}">${guru.fullName}</option>`;
+                });
+            }
+        }
+
+        function populateYearDropdowns() {
+            const yearDropdowns = ['adminAbsenFromYear', 'adminAbsenToYear', 'teacherAbsenFromYear', 'teacherAbsenToYear'];
+            const currentYear = new Date().getFullYear();
+            yearDropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    select.innerHTML = '';
+                    for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+                        select.innerHTML += `<option value="${year}">${year}</option>`;
+                    }
+                    select.value = currentYear;
+                }
+            });
+        }
+
+        window.showAdminTab = function(tabName) {
+            document.querySelectorAll('.admin-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(`admin-${tabName}`).classList.remove('hidden');
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.classList.remove('border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+        }
+
+        function getFirstHour(jamString) {
+            if (!jamString || typeof jamString !== 'string') return 99;
+            const firstPart = jamString.split(',')[0].trim();
+            const hour = parseInt(firstPart.split('-')[0], 10);
+            return isNaN(hour) ? 99 : hour;
+        }
+
+        function sortJournals(journalArray) {
+            return journalArray.sort((a, b) => {
+                const dateComparison = a.date.localeCompare(b.date);
+                if (dateComparison !== 0) {
+                    return dateComparison;
+                }
+                const hourA = getFirstHour(a.jam);
+                const hourB = getFirstHour(b.jam);
+                return hourA - hourB;
+            });
+        }
+
+
+        function getFilteredJournals() {
+            const filterType = document.getElementById('adminJurnalFilter').value;
+            const selectedGuru = document.getElementById('adminJurnalGuru').value;
+            const selectedDate = document.getElementById('adminJurnalDate').value;
+            const selectedMonth = document.getElementById('adminJurnalMonth').value;
+            const selectedWeek = document.getElementById('adminJurnalWeek').value;
+            
+            let filteredJournals = journals;
+            
+            if (selectedGuru) {
+                filteredJournals = filteredJournals.filter(j => j.teacher === selectedGuru);
+            }
+            
+            if (filterType === 'harian' && selectedDate) {
+                filteredJournals = filteredJournals.filter(j => j.date === selectedDate);
+            } else if (filterType === 'mingguan' && selectedMonth && selectedWeek) {
+                const [year, month] = selectedMonth.split('-');
+                const weekNumber = parseInt(selectedWeek);
+                
+                filteredJournals = filteredJournals.filter(j => {
+                    const journalDate = new Date(j.date);
+                    const journalYear = journalDate.getFullYear();
+                    const journalMonth = journalDate.getMonth() + 1;
+                    
+                    if (journalYear == year && journalMonth == month) {
+                        const firstDay = new Date(year, month - 1, 1);
+                        const dayOfMonth = journalDate.getDate();
+                        const weekOfMonth = Math.ceil((dayOfMonth + firstDay.getDay()) / 7);
+                        return weekOfMonth === weekNumber;
+                    }
+                    return false;
+                });
+            } else if (filterType === 'bulanan' && selectedMonth) {
+                filteredJournals = filteredJournals.filter(j => j.date.startsWith(selectedMonth));
+            }
+            
+            return sortJournals(filteredJournals);
+        }
+
+        function loadAdminJurnal() {
+            const tbody = document.getElementById('adminJurnalTable');
+            tbody.innerHTML = '';
+            
+            const filtered = getFilteredJournals();
+            const filterType = document.getElementById('adminJurnalFilter').value;
+
+            const journalsToDisplay = (filterType === 'bulanan') ? filtered.slice(0, 25) : filtered;
+            
+            journalsToDisplay.forEach(j => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="border px-4 py-2">${formatDateToDDMMYYYY(j.date)}</td>
+                    <td class="border px-4 py-2">${j.teacherName}</td>
+                    <td class="border px-4 py-2">${j.class}</td>
+                    <td class="border px-4 py-2">${j.jam}</td>
+                    <td class="border px-4 py-2">${j.materi}</td>
+                    <td class="border px-4 py-2">${j.aktivitas}</td>
+                    <td class="border px-4 py-2">${j.izin || 0}</td>
+                    <td class="border px-4 py-2">${j.sakit || 0}</td>
+                    <td class="border px-4 py-2">${j.tanpaKet || 0}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            loadTeacherHourStats();
+        }
+
+        function countHours(jamString) {
+            if (!jamString || typeof jamString !== 'string') return 0;
+            
+            let totalHours = 0;
+            const parts = jamString.split(',');
+            
+            parts.forEach(part => {
+                part = part.trim();
+                if (part.includes('-')) {
+                    const range = part.split('-').map(Number);
+                    if (range.length === 2 && !isNaN(range[0]) && !isNaN(range[1])) {
+                        totalHours += (range[1] - range[0] + 1);
+                    }
+                } else if (!isNaN(Number(part)) && part !== '') {
+                    totalHours += 1;
+                }
+            });
+            
+            return totalHours;
+        }
+
+        function loadTeacherHourStats() {
+            const tbody = document.getElementById('teacherHoursTable');
+            tbody.innerHTML = '';
+
+            const filteredJournals = getFilteredJournals();
+            const stats = {};
+
+            filteredJournals.forEach(journal => {
+                if (!stats[journal.teacher]) {
+                    stats[journal.teacher] = {
+                        name: journal.teacherName,
+                        totalHours: 0
+                    };
+                }
+                stats[journal.teacher].totalHours += countHours(journal.jam);
+            });
+
+            if (Object.keys(stats).length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" class="text-center py-4 text-gray-500">Tidak ada data untuk ditampilkan.</td></tr>`;
+                return;
+            }
+
+            const sortedStats = Object.values(stats).sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedStats.forEach(stat => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2 text-sm text-gray-700">${stat.name}</td>
+                    <td class="px-4 py-2 text-sm text-gray-700 font-medium">${stat.totalHours} jam</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function loadAdminAbsen() {
+            const tbody = document.getElementById('adminAbsenTable');
+            tbody.innerHTML = '';
+            
+            const filterType = document.getElementById('adminAbsenFilter').value;
+            const selectedClass = document.getElementById('adminAbsenKelas').value;
+            const selectedDay = document.getElementById('adminAbsenDay').value;
+            const selectedMonth = document.getElementById('adminAbsenMonth').value;
+            const fromMonth = document.getElementById('adminAbsenFromMonth').value;
+            const fromYear = document.getElementById('adminAbsenFromYear').value;
+            const toMonth = document.getElementById('adminAbsenToMonth').value;
+            const toYear = document.getElementById('adminAbsenToYear').value;
+            
+            const attendanceSummary = {};
+            
+            students.forEach(student => {
+                if (!selectedClass || student.class === selectedClass) {
+                    attendanceSummary[student.nisn] = { ...student, hadir: 0, izin: 0, sakit: 0, tanpaKet: 0, total: 0 };
+                }
+            });
+            
+            let filteredAttendance = attendance;
+            
+            if (filterType === 'harian' && selectedDay) {
+                filteredAttendance = attendance.filter(record => record.date === selectedDay);
+            } else if (filterType === 'bulanan' && selectedMonth) {
+                filteredAttendance = attendance.filter(record => record.date.startsWith(selectedMonth));
+            } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
+                const fromDate = new Date(parseInt(fromYear), parseInt(fromMonth) - 1, 1);
+                const toDate = new Date(parseInt(toYear), parseInt(toMonth), 0);
+                filteredAttendance = attendance.filter(record => {
+                    const recordDate = new Date(record.date);
+                    return recordDate >= fromDate && recordDate <= toDate;
+                });
+            }
+            
+            if (selectedClass) {
+                filteredAttendance = filteredAttendance.filter(record => record.class === selectedClass);
+            }
+            
+            filteredAttendance.forEach(record => {
+                record.students.forEach(student => {
+                    if (attendanceSummary[student.nisn]) {
+                        attendanceSummary[student.nisn][student.status]++;
+                        attendanceSummary[student.nisn].total++;
+                    }
+                });
+            });
+            
+            let no = 1;
+            const sortedData = Object.values(attendanceSummary).sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedData.forEach(student => {
+                const persentase = student.total > 0 ? ((student.hadir / student.total) * 100).toFixed(1) : '0.0';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm border border-gray-300">${no++}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${student.nisn}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${student.name}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${student.class}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${student.hadir}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${student.izin}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${student.sakit}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${student.tanpaKet}</td>
+                    <td class="px-4 py-3 text-sm border border-gray-300">${persentase}%</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        window.filterAdminJurnal = () => loadAdminJurnal();
+        window.filterAdminAbsen = () => loadAdminAbsen();
+
+        window.printAdminJurnal = function() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('landscape');
+                
+                let filteredJournals = getFilteredJournals(); 
+                
+                doc.setFont('times', 'normal');
+                
+                doc.setFontSize(16);
+                doc.text('REKAP JURNAL MENGAJAR', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Semester ${systemSettings.semester || ''} - ${systemSettings.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+                
+                const filterType = document.getElementById('adminJurnalFilter').value;
+                const selectedDate = document.getElementById('adminJurnalDate').value;
+                const selectedMonth = document.getElementById('adminJurnalMonth').value;
+                const selectedWeek = document.getElementById('adminJurnalWeek').value;
+                const selectedGuru = document.getElementById('adminJurnalGuru').value;
+                
+                let periodText = '';
+                const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+                if (filterType === 'harian' && selectedDate) {
+                    const date = new Date(selectedDate);
+                    periodText = `Tanggal: ${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+                } else if (selectedMonth) {
+                    const [year, month] = selectedMonth.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    
+                    if (filterType === 'mingguan' && selectedWeek) {
+                        periodText = `Periode: Minggu ${selectedWeek}, ${monthName} ${year}`;
+                    } else {
+                        periodText = `Periode: ${monthName} ${year}`;
+                    }
+                }
+                if (periodText) {
+                    doc.text(periodText, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+                }
+                
+                let teacherInfo = '';
+                let teacherYPos = periodText ? 50 : 40;
+                if (selectedGuru) {
+                    const guru = users.find(u => u.username === selectedGuru);
+                    teacherInfo = `Guru: ${guru.fullName}`;
+                    doc.text(teacherInfo, 10, teacherYPos);
+                    teacherYPos += 10;
+                }
+                
+                let no = 1;
+                const tableData = filteredJournals.map(journal => [
+                    no++,
+                    formatDateToDDMMYYYY(journal.date),
+                    journal.class,
+                    journal.jam || '-',
+                    journal.materi || '-',
+                    journal.aktivitas || '-',
+                    journal.izin,
+                    journal.sakit,
+                    journal.tanpaKet
+                ]);
+                
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const availableWidth = pageWidth - 20;
+                
+                doc.autoTable({
+                    head: [['No', 'Tanggal', 'Kelas', 'Jam Ke', 'Materi', 'Aktivitas Selama Pembelajaran', 'I', 'S', 'TK']],
+                    body: tableData,
+                    startY: teacherInfo ? teacherYPos : (periodText ? 50 : 40),
+                    margin: { left: 10, right: 10 },
+                    tableWidth: availableWidth,
+                    styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    columnStyles: {
+                        0: { cellWidth: availableWidth * 0.036 },
+                        1: { cellWidth: availableWidth * 0.072 },
+                        2: { cellWidth: availableWidth * 0.048 },
+                        3: { cellWidth: availableWidth * 0.072 },
+                        4: { cellWidth: availableWidth * 0.186, halign: 'justify' },
+                        5: { cellWidth: 'auto', halign: 'justify' },
+                        6: { cellWidth: availableWidth * 0.06 },
+                        7: { cellWidth: availableWidth * 0.06 },
+                        8: { cellWidth: availableWidth * 0.06 }
+                    }
+                });
+                
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFontSize(10);
+                doc.setFont('times', 'normal');
+                doc.text('Kepala Sekolah', 20, finalY);
+                doc.text(systemSettings.kepalaSekolah || '', 20, finalY + 20);
+                
+                doc.save('rekap-jurnal.pdf');
+                showNotification('PDF berhasil diunduh!');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showNotification('Gagal membuat PDF. Pastikan data tersedia.', 'error');
+            }
+        }
+
+        window.printAdminAbsen = function() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                const filterType = document.getElementById('adminAbsenFilter').value;
+                const selectedClass = document.getElementById('adminAbsenKelas').value;
+                const selectedDay = document.getElementById('adminAbsenDay').value;
+                const selectedMonth = document.getElementById('adminAbsenMonth').value;
+                const fromMonth = document.getElementById('adminAbsenFromMonth').value;
+                const fromYear = document.getElementById('adminAbsenFromYear').value;
+                const toMonth = document.getElementById('adminAbsenToMonth').value;
+                const toYear = document.getElementById('adminAbsenToYear').value;
+                
+                doc.setFont('times', 'normal');
+                
+                doc.setFontSize(16);
+                doc.text('REKAP ABSENSI SISWA', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Semester ${systemSettings.semester || ''} - ${systemSettings.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+                
+                let yPos = 40;
+                const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+                if (filterType === 'harian' && selectedDay) {
+                    const date = new Date(selectedDay);
+                    doc.text(`Tanggal: ${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 20, yPos);
+                    yPos += 10;
+                } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
+                    let periodText = `Periode: ${monthNames[parseInt(fromMonth)-1]} ${fromYear} - ${monthNames[parseInt(toMonth)-1]} ${toYear}`;
+                    doc.text(periodText, 20, yPos);
+                    yPos += 10;
+                } else if (filterType === 'bulanan' && selectedMonth) {
+                    const [year, month] = selectedMonth.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    doc.text(`Periode: ${monthName} ${year}`, 20, yPos);
+                    yPos += 10;
+                }
+                
+                if (selectedClass) {
+                    doc.text(`Kelas: ${selectedClass}`, 20, yPos);
+                    yPos += 10;
+                }
+                
+                const attendanceSummary = {};
+                students.forEach(student => {
+                    if (!selectedClass || student.class === selectedClass) {
+                        attendanceSummary[student.nisn] = { ...student, hadir: 0, izin: 0, sakit: 0, tanpaKet: 0, total: 0 };
+                    }
+                });
+                
+                let filteredAttendance = attendance;
+                
+                if (filterType === 'harian' && selectedDay) {
+                    filteredAttendance = attendance.filter(record => record.date === selectedDay);
+                } else if (filterType === 'bulanan' && selectedMonth) {
+                    filteredAttendance = attendance.filter(record => record.date.startsWith(selectedMonth));
+                } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
+                    const fromDate = new Date(parseInt(fromYear), parseInt(fromMonth) - 1, 1);
+                    const toDate = new Date(parseInt(toYear), parseInt(toMonth), 0);
+                    filteredAttendance = attendance.filter(record => {
+                        const recordDate = new Date(record.date);
+                        return recordDate >= fromDate && recordDate <= toDate;
+                    });
+                }
+                
+                if (selectedClass) {
+                    filteredAttendance = filteredAttendance.filter(record => record.class === selectedClass);
+                }
+                
+                filteredAttendance.forEach(record => {
+                    record.students.forEach(student => {
+                        if (attendanceSummary[student.nisn]) {
+                            attendanceSummary[student.nisn][student.status]++;
+                            attendanceSummary[student.nisn].total++;
+                        }
+                    });
+                });
+                
+                let no = 1;
+                const tableData = Object.values(attendanceSummary)
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(student => {
+                        const persentase = student.total > 0 ? ((student.hadir / student.total) * 100).toFixed(1) : '0.0';
+                        return [no++, student.nisn, student.name, student.hadir, student.izin, student.sakit, student.tanpaKet, `${persentase}%`];
+                    });
+                
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const availableWidth = pageWidth - 20;
+                
+                const noWidth = availableWidth * 0.06, nisnWidth = availableWidth * 0.15, tkWidth = availableWidth * 0.06, hisWidth = tkWidth, hadir = availableWidth * 0.10;
+                const namaWidth = availableWidth - noWidth - nisnWidth - (hisWidth * 3) - tkWidth - hadir;
+                
+                doc.autoTable({
+                    head: [['No', 'NISN', 'Nama', 'H', 'I', 'S', 'TK', 'Hadir %']],
+                    body: tableData,
+                    startY: yPos,
+                    margin: { left: 10, right: 10 },
+                    tableWidth: availableWidth,
+                    styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    columnStyles: { 0: { cellWidth: noWidth }, 1: { cellWidth: nisnWidth }, 2: { cellWidth: namaWidth, halign: 'left' }, 3: { cellWidth: hisWidth }, 4: { cellWidth: hisWidth }, 5: { cellWidth: hisWidth }, 6: { cellWidth: tkWidth }, 7: { cellWidth: hadir } }
+                });
+                
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFontSize(10);
+                doc.setFont('times', 'normal');
+                doc.text('Kepala Sekolah', 20, finalY);
+                doc.text(systemSettings.kepalaSekolah || '', 20, finalY + 20);
+                
+                doc.save('rekap-absensi.pdf');
+                showNotification('PDF berhasil diunduh!');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showNotification('Gagal membuat PDF. Pastikan data tersedia.', 'error');
+            }
+        }
+
+        // User Management
+        function loadUserTable() {
+            const tbody = document.getElementById('userTable');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-3 py-2 text-sm border border-gray-300">${user.fullName}</td>
+                    <td class="px-3 py-2 text-sm border border-gray-300">${user.role}</td>
+                    <td class="px-3 py-2 text-sm border border-gray-300">
+                        <button onclick="editUser('${user.id}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 mr-1">
+                            Edit
+                        </button>
+                        ${user.id !== 'admin' ? `<button onclick="deleteUser('${user.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">Hapus</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        window.showUserModal = function(userId = null) {
+            editingId = userId;
+            const modal = document.getElementById('userModal');
+            
+            if (userId) {
+                const user = users.find(u => u.id === userId);
+                document.getElementById('userFullName').value = user.fullName;
+                document.getElementById('userUsername').value = user.username;
+                document.getElementById('userPassword').value = user.password;
+                document.getElementById('userRole').value = user.role;
+                 document.getElementById('userUsername').readOnly = true;
+            } else {
+                document.getElementById('userForm').reset();
+                 document.getElementById('userUsername').readOnly = false;
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        window.closeUserModal = function() {
+            document.getElementById('userModal').classList.add('hidden');
+            document.getElementById('userModal').classList.remove('flex');
+            editingId = null;
+        }
+
+        window.editUser = (userId) => showUserModal(userId);
+
+        window.deleteUser = function(userId) {
+            showConfirmation('Apakah Anda yakin ingin menghapus pengguna ini?', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/users`, userId));
+                    showNotification('Pengguna berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting user: ", error);
+                    showNotification('Gagal menghapus pengguna.', 'error');
+                }
+            });
+        }
+
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('userFullName').value;
+            const username = document.getElementById('userUsername').value;
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+
+            if (!fullName || !username || !password) {
+                showNotification('Semua field harus diisi!', 'error');
+                return;
+            }
+            
+            const userData = { fullName, username, password, role };
+            
+            try {
+                const userId = editingId || username;
+                const userRef = doc(db, `artifacts/${appId}/public/data/users`, userId);
+                
+                if (!editingId) {
+                    const docSnap = await getDoc(userRef);
+                    if (docSnap.exists()) {
+                        showNotification('Username sudah ada!', 'error');
+                        return;
+                    }
+                     userData.id = username;
+                }
+
+                await setDoc(userRef, userData);
+                showNotification(editingId ? 'Pengguna berhasil diperbarui!' : 'Pengguna berhasil ditambahkan!');
+                closeUserModal();
+            } catch (error) {
+                console.error("Error saving user: ", error);
+                showNotification('Gagal menyimpan pengguna.', 'error');
+            }
+        });
+
+        // Student Management
+        function updateTotalStudentCount() {
+            const totalCountElement = document.getElementById('totalStudentCount');
+            if (totalCountElement) {
+                totalCountElement.textContent = students.length;
+            }
+        }
+        
+        function loadStudentTable() {
+            const tbody = document.getElementById('studentTable');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            const classFilter = document.getElementById('studentClassFilter').value;
+            const filteredStudents = classFilter ? students.filter(s => s.class === classFilter) : students;
+            
+            filteredStudents.sort((a,b) => a.name.localeCompare(b.name)).forEach(student => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-3 py-2 text-sm">${student.nisn}</td>
+                    <td class="px-3 py-2 text-sm">${student.name}</td>
+                    <td class="px-3 py-2 text-sm">${student.class}</td>
+                    <td class="px-3 py-2 text-sm">
+                        <button onclick="editStudent('${student.id}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 mr-1">Edit</button>
+                        <button onclick="deleteStudent('${student.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        window.showStudentModal = function(studentId = null) {
+            editingId = studentId;
+            const modal = document.getElementById('studentModal');
+            const classSelect = document.getElementById('studentClass');
+            classSelect.innerHTML = '<option value="">Pilih Kelas</option>';
+            classes.sort((a,b) => a.name.localeCompare(b.name)).forEach(cls => {
+                classSelect.innerHTML += `<option value="${cls.name}">${cls.name}</option>`;
+            });
+            
+            if (studentId) {
+                const student = students.find(s => s.id === studentId);
+                document.getElementById('studentNISN').value = student.nisn;
+                document.getElementById('studentName').value = student.name;
+                document.getElementById('studentClass').value = student.class;
+                document.getElementById('studentNISN').readOnly = true;
+            } else {
+                document.getElementById('studentForm').reset();
+                document.getElementById('studentNISN').readOnly = false;
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        window.closeStudentModal = function() {
+            document.getElementById('studentModal').classList.add('hidden');
+            document.getElementById('studentModal').classList.remove('flex');
+            editingId = null;
+        }
+
+        window.editStudent = (studentId) => showStudentModal(studentId);
+
+        window.deleteStudent = function(studentId) {
+            const studentToDelete = students.find(s => s.id === studentId);
+            if (!studentToDelete) {
+                showNotification("Siswa tidak ditemukan.", "error");
+                return;
+            }
+            const className = studentToDelete.class;
+
+            showConfirmation('Apakah Anda yakin ingin menghapus siswa ini?', async () => {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/students`, studentId));
+                    await updateClassStudentCounts([className]);
+                    showNotification('Siswa berhasil dihapus!');
+                } catch (error) {
+                    console.error("Error deleting student: ", error);
+                    showNotification('Gagal menghapus siswa.', 'error');
+                }
+            });
+        }
+        
+        window.deleteStudentsByClass = function() {
+            const classToDelete = document.getElementById('deleteStudentClassFilter').value;
+            if (!classToDelete) {
+                showNotification('Silakan pilih kelas yang akan dihapus siswanya.', 'error');
+                return;
+            }
+
+            const studentsInClass = students.filter(s => s.class === classToDelete);
+            if (studentsInClass.length === 0) {
+                showNotification(`Tidak ada siswa di kelas ${classToDelete}.`, 'error');
+                return;
+            }
+
+            showConfirmation(`Apakah Anda yakin ingin menghapus ${studentsInClass.length} siswa dari kelas ${classToDelete}? Tindakan ini tidak dapat diurungkan.`, async () => {
+                try {
+                    const batch = writeBatch(db);
+                    studentsInClass.forEach(student => {
+                        const studentRef = doc(db, `artifacts/${appId}/public/data/students`, student.id);
+                        batch.delete(studentRef);
+                    });
+                    await batch.commit();
+                    await updateClassStudentCounts([classToDelete]);
+                    showNotification(`Semua siswa dari kelas ${classToDelete} berhasil dihapus!`);
+                    document.getElementById('deleteStudentClassFilter').value = ''; // Reset dropdown
+                } catch (error) {
+                    console.error("Error deleting students by class: ", error);
+                    showNotification('Gagal menghapus siswa.', 'error');
+                }
+            });
+        }
+
+        window.filterStudents = () => loadStudentTable();
+
+        document.getElementById('studentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const nisn = document.getElementById('studentNISN').value;
+            const name = document.getElementById('studentName').value;
+            const studentClass = document.getElementById('studentClass').value;
+
+            if (!nisn || !name || !studentClass) {
+                showNotification('Semua field harus diisi!', 'error');
+                return;
+            }
+
+            const studentData = { nisn, name, class: studentClass };
+            
+            try {
+                const studentId = editingId || nisn;
+                const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
+
+                let oldClassName = null;
+                if (editingId) {
+                    const studentBeforeUpdate = students.find(s => s.id === editingId);
+                    if (studentBeforeUpdate) {
+                        oldClassName = studentBeforeUpdate.class;
+                    }
+                }
+                
+                if (!editingId) {
+                    const docSnap = await getDoc(studentRef);
+                    if (docSnap.exists()) {
+                        showNotification('NISN sudah terdaftar!', 'error');
+                        return;
+                    }
+                     studentData.id = nisn;
+                }
+
+                await setDoc(studentRef, studentData);
+
+                const classesToUpdate = [studentClass];
+                if (oldClassName && oldClassName !== studentClass) {
+                    classesToUpdate.push(oldClassName);
+                }
+                await updateClassStudentCounts(classesToUpdate);
+
+                showNotification(editingId ? 'Data siswa berhasil diperbarui!' : 'Siswa berhasil ditambahkan!');
+                closeStudentModal();
+            } catch (error) {
+                console.error("Error saving student: ", error);
+                showNotification('Gagal menyimpan data siswa.', 'error');
+            }
+        });
+
+        // Class Management
+        async function updateClassStudentCounts(classNamesToUpdate = []) {
+            let targetClasses = classNamesToUpdate.length > 0 ? classNamesToUpdate : classes.map(c => c.name);
+            targetClasses = [...new Set(targetClasses)]; // Remove duplicates
+
+            if (targetClasses.length === 0) return;
+
+            console.log("Updating student counts for classes:", targetClasses);
+
+            try {
+                const batch = writeBatch(db);
+                for (const className of targetClasses) {
+                    const classDoc = classes.find(c => c.name === className);
+                    if (classDoc) {
+                        const count = students.filter(s => s.class === className).length;
+                        const classRef = doc(db, `artifacts/${appId}/public/data/classes`, classDoc.id);
+                        batch.update(classRef, { studentCount: count });
+                    }
+                }
+                await batch.commit();
+                console.log("Student counts updated successfully.");
+            } catch (error) {
+                console.error("Error updating student counts:", error);
+            }
+        }
+        
+        function loadClassTable() {
+            const tbody = document.getElementById('classTable');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            classes.sort((a,b)=>a.name.localeCompare(b.name)).forEach(cls => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-3 py-2 text-sm">${cls.name}</td>
+                    <td class="px-3 py-2 text-sm">${cls.studentCount || 0}</td>
+                    <td class="px-3 py-2 text-sm">
+                        <button onclick="editClass('${cls.id}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 mr-1">Edit</button>
+                        <button onclick="deleteClass('${cls.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        window.showClassModal = function(classId = null) {
+            editingId = classId;
+            const modal = document.getElementById('classModal');
+            
+            if (classId) {
+                const cls = classes.find(c => c.id === classId);
+                document.getElementById('className').value = cls.name;
+            } else {
+                document.getElementById('classForm').reset();
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        window.closeClassModal = function() {
+            document.getElementById('classModal').classList.add('hidden');
+            document.getElementById('classModal').classList.remove('flex');
+            editingId = null;
+        }
+
+        window.editClass = (classId) => showClassModal(classId);
+
+        window.deleteClass = function(classId) {
+            const cls = classes.find(c => c.id === classId);
+            const studentCount = students.filter(s => s.class === cls.name).length;
+            if (studentCount > 0) {
+                showNotification('Tidak dapat menghapus kelas yang masih memiliki siswa!', 'error');
+                return;
+            }
+            
+            showConfirmation('Apakah Anda yakin ingin menghapus kelas ini?', async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/classes`, classId));
+                showNotification('Kelas berhasil dihapus!');
+            });
+        }
+
+        document.getElementById('classForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const className = document.getElementById('className').value.toUpperCase();
+            if (!className) {
+                showNotification('Nama kelas tidak boleh kosong!', 'error');
+                return;
+            }
+            
+            try {
+                if (editingId) {
+                    const oldClass = classes.find(c => c.id === editingId);
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/classes`, editingId), { name: className });
+                    
+                    const batch = writeBatch(db);
+                    students.filter(s => s.class === oldClass.name).forEach(student => {
+                        const studentRef = doc(db, `artifacts/${appId}/public/data/students`, student.id);
+                        batch.update(studentRef, { class: className });
+                    });
+                    await batch.commit();
+                    showNotification('Kelas berhasil diperbarui!');
+                } else {
+                    if (classes.some(c => c.name === className)) {
+                        showNotification('Nama kelas sudah ada!', 'error');
+                        return;
+                    }
+                    const classRef = doc(collection(db, `artifacts/${appId}/public/data/classes`));
+                    await setDoc(classRef, { id: classRef.id, name: className, studentCount: 0 });
+                    showNotification('Kelas berhasil ditambahkan!');
+                }
+                closeClassModal();
+            } catch (error) {
+                 console.error("Error saving class: ", error);
+                showNotification('Gagal menyimpan data kelas.', 'error');
+            }
+        });
+
+        // Promote students
+        window.showPromoteModal = function() {
+            const modal = document.getElementById('promoteModal');
+            const fromSelect = document.getElementById('promoteFromClass');
+            const toSelect = document.getElementById('promoteToClass');
+            
+            fromSelect.innerHTML = '<option value="">Pilih Kelas</option>';
+            toSelect.innerHTML = '<option value="">Pilih Kelas</option>';
+            
+            classes.sort((a,b) => a.name.localeCompare(b.name)).forEach(cls => {
+                fromSelect.innerHTML += `<option value="${cls.name}">${cls.name}</option>`;
+                toSelect.innerHTML += `<option value="${cls.name}">${cls.name}</option>`;
+            });
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        window.closePromoteModal = () => document.getElementById('promoteModal').classList.add('hidden');
+
+        document.getElementById('promoteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fromClass = document.getElementById('promoteFromClass').value;
+            const toClass = document.getElementById('promoteToClass').value;
+            
+            if (!fromClass || !toClass) {
+                showNotification('Pilih kelas asal dan tujuan!', 'error');
+                return;
+            }
+            
+            const studentsToPromote = students.filter(s => s.class === fromClass);
+            
+            if (studentsToPromote.length === 0) {
+                showNotification('Tidak ada siswa di kelas tersebut!', 'error');
+                return;
+            }
+            
+            showConfirmation(`Pindahkan ${studentsToPromote.length} siswa dari kelas ${fromClass} ke ${toClass}?`, async () => {
+                const batch = writeBatch(db);
+                studentsToPromote.forEach(student => {
+                    const studentRef = doc(db, `artifacts/${appId}/public/data/students`, student.id);
+                    batch.update(studentRef, { class: toClass });
+                });
+                await batch.commit();
+                await updateClassStudentCounts([fromClass, toClass]);
+                showNotification(`${studentsToPromote.length} siswa berhasil dipindahkan!`);
+            });
+            
+            closePromoteModal();
+        });
+
+        // System Settings
+        function loadSystemSettings() {
+            document.getElementById('semester').value = systemSettings.semester || 'ganjil';
+            document.getElementById('tahunAjaran').value = systemSettings.tahunAjaran || '';
+            document.getElementById('kepalaSekolah').value = systemSettings.kepalaSekolah || '';
+        }
+
+        window.saveSystemSettings = async function() {
+            const settingsData = {
+                semester: document.getElementById('semester').value,
+                tahunAjaran: document.getElementById('tahunAjaran').value,
+                kepalaSekolah: document.getElementById('kepalaSekolah').value,
+            };
+            await setDoc(doc(db, `artifacts/${appId}/public/data/settings/main`), settingsData);
+            showNotification('Pengaturan sistem berhasil disimpan!');
+        }
+
+        // Teacher Dashboard Functions
+        function initializeTeacherDashboard() {
+            populateClassDropdowns();
+            populateYearDropdowns();
+            
+            const today = formatDate(new Date());
+            const thisMonth = today.slice(0, 7);
+            document.getElementById('jurnalTanggal').value = today;
+            document.getElementById('absenTanggal').value = today;
+            document.getElementById('teacherJurnalDate').value = today;
+            document.getElementById('teacherJurnalMonth').value = thisMonth;
+            document.getElementById('teacherAbsenDay').value = today;
+            document.getElementById('teacherAbsenMonth').value = thisMonth;
+            document.getElementById('absensiInputTanggal').value = today;
+            document.getElementById('absensiInputBulan').value = thisMonth;
+
+            loadTeacherJurnal();
+            loadTeacherAbsen();
+            filterDaftarAbsensi();
+            
+            document.getElementById('teacherJurnalFilter').addEventListener('change', function() {
+                const dateInput = document.getElementById('teacherJurnalDate');
+                const monthInput = document.getElementById('teacherJurnalMonth');
+                const weekSelect = document.getElementById('teacherJurnalWeek');
+                dateInput.classList.toggle('hidden', this.value !== 'harian');
+                monthInput.classList.toggle('hidden', this.value === 'harian');
+                weekSelect.classList.toggle('hidden', this.value !== 'mingguan');
+            });
+            
+            document.getElementById('teacherAbsenFilter').addEventListener('change', function() {
+                const isHarian = this.value === 'harian';
+                const isBulanan = this.value === 'bulanan';
+                const isTahunan = this.value === 'tahunan';
+                document.getElementById('teacherAbsenDay').classList.toggle('hidden', !isHarian);
+                document.getElementById('teacherAbsenMonth').classList.toggle('hidden', !isBulanan);
+                document.getElementById('teacherAbsenFromMonth').classList.toggle('hidden', !isTahunan);
+                document.getElementById('teacherAbsenFromYear').classList.toggle('hidden', !isTahunan);
+                document.getElementById('teacherAbsenToLabel').classList.toggle('hidden', !isTahunan);
+                document.getElementById('teacherAbsenToMonth').classList.toggle('hidden', !isTahunan);
+                document.getElementById('teacherAbsenToYear').classList.toggle('hidden', !isTahunan);
+            });
+
+            document.getElementById('absensiInputFilter').addEventListener('change', (e) => {
+                document.getElementById('absensiInputTanggal').classList.toggle('hidden', e.target.value !== 'harian');
+                document.getElementById('absensiInputBulan').classList.toggle('hidden', e.target.value !== 'bulanan');
+            });
+        }
+
+        window.showTeacherTab = function(tabName) {
+            document.querySelectorAll('.teacher-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(`teacher-${tabName}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.teacher-tab').forEach(tab => {
+                tab.classList.remove('border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+            
+            if (tabName === 'input-jurnal' || tabName === 'input-absen') {
+                const currentDate = formatDate(new Date());
+                if (tabName === 'input-jurnal') document.getElementById('jurnalTanggal').value = currentDate;
+                else if (tabName === 'input-absen') document.getElementById('absenTanggal').value = currentDate;
+            }
+        }
+
+        function populateClassDropdowns() {
+            const dropdowns = ['jurnalKelas', 'absenKelas', 'teacherAbsenKelas', 'adminAbsenKelas', 'studentClassFilter', 'promoteFromClass', 'promoteToClass', 'studentClass', 'deleteStudentClassFilter'];
+            
+            dropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    const currentValue = select.value;
+                     let defaultOption = '<option value="">Pilih Kelas</option>';
+                    if (['studentClassFilter', 'adminAbsenKelas'].includes(id)) {
+                        defaultOption = '<option value="">Semua Kelas</option>';
+                    } else if (id === 'deleteStudentClassFilter') {
+                        defaultOption = '<option value="">Kelas</option>';
+                    }
+                    
+                    select.innerHTML = defaultOption;
+                    classes.sort((a,b) => a.name.localeCompare(b.name)).forEach(cls => {
+                        select.innerHTML += `<option value="${cls.name}">${cls.name}</option>`;
+                    });
+                    if (currentValue) select.value = currentValue;
+                }
+            });
+        }
+
+        // Journal Management
+        document.getElementById('jurnalForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const tanggal = document.getElementById('jurnalTanggal').value;
+            const kelas = document.getElementById('jurnalKelas').value;
+
+            // Cek apakah data absensi ada sebelum menyimpan
+            const attendanceRecord = attendance.find(record => record.date === tanggal && record.class === kelas);
+
+            if (!attendanceRecord) {
+                showNotification('Harap isi input absen terlebih dahulu agar jurnal bisa tersimpan.', 'error');
+                return; // Menghentikan proses penyimpanan jika absen tidak ada
+            }
+            
+            const journalData = {
+                date: tanggal,
+                class: kelas,
+                jam: document.getElementById('jurnalJam').value,
+                materi: document.getElementById('jurnalMateri').value,
+                aktivitas: document.getElementById('jurnalAktivitas').value,
+                izin: parseInt(document.getElementById('jurnalIzin').value) || 0,
+                sakit: parseInt(document.getElementById('jurnalSakit').value) || 0,
+                tanpaKet: parseInt(document.getElementById('jurnalTanpaKet').value) || 0,
+                teacher: currentUser,
+                teacherName: users.find(u => u.username === currentUser).fullName,
+            };
+            
+            if (!journalData.date || !journalData.class || !journalData.jam || !journalData.materi || !journalData.aktivitas) {
+                showNotification('Harap isi semua field yang wajib (*)!', 'error');
+                return;
+            }
+            
+            if (editingJournalId) {
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/journals`, editingJournalId), journalData);
+                editingJournalId = null;
+                showNotification('Jurnal berhasil diperbarui!');
+            } else {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/journals`), journalData);
+                showNotification('Jurnal berhasil disimpan!');
+            }
+            
+            document.getElementById('jurnalForm').reset();
+            document.getElementById('jurnalTanggal').value = journalData.date;
+            document.getElementById('jurnalKelas').value = journalData.class;
+            updateJurnalAbsenRekap(false); // Memanggil updateJurnalAbsenRekap tanpa notifikasi sukses
+        });
+
+        function loadTeacherJurnal() {
+            const tbody = document.getElementById('teacherJurnalTable');
+            tbody.innerHTML = '';
+            
+            const filterType = document.getElementById('teacherJurnalFilter').value;
+            const selectedDate = document.getElementById('teacherJurnalDate').value;
+            const selectedMonth = document.getElementById('teacherJurnalMonth').value;
+            const selectedWeek = document.getElementById('teacherJurnalWeek').value;
+            
+            let filteredJournals = journals.filter(j => j.teacher === currentUser);
+            
+            if (filterType === 'harian' && selectedDate) {
+                filteredJournals = filteredJournals.filter(j => j.date === selectedDate);
+            } else if (filterType === 'mingguan' && selectedMonth && selectedWeek) {
+                const [year, month] = selectedMonth.split('-');
+                const weekNumber = parseInt(selectedWeek);
+                
+                filteredJournals = filteredJournals.filter(j => {
+                    const journalDate = new Date(j.date);
+                    if (journalDate.getFullYear() != year || journalDate.getMonth() + 1 != month) return false;
+                    const firstDay = new Date(year, month - 1, 1);
+                    const weekOfMonth = Math.ceil((journalDate.getDate() + firstDay.getDay()) / 7);
+                    return weekOfMonth === weekNumber;
+                });
+            } else if (filterType === 'bulanan' && selectedMonth) {
+                filteredJournals = filteredJournals.filter(j => j.date.startsWith(selectedMonth));
+            }
+            
+            sortJournals(filteredJournals).forEach(journal => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm">${formatDateToDDMMYYYY(journal.date)}</td>
+                    <td class="px-4 py-3 text-sm">${journal.class}</td>
+                    <td class="px-4 py-3 text-sm">${journal.jam || '-'}</td>
+                    <td class="px-4 py-3 text-sm">${journal.materi || '-'}</td>
+                    <td class="px-4 py-3 text-sm">${journal.aktivitas || '-'}</td>
+                    <td class="px-4 py-3 text-sm">${journal.izin}</td>
+                    <td class="px-4 py-3 text-sm">${journal.sakit}</td>
+                    <td class="px-4 py-3 text-sm">${journal.tanpaKet}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editJournal('${journal.id}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 mr-1">Edit</button>
+                        <button onclick="deleteJournal('${journal.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateTeacherMonthlyStats();
+        }
+
+        window.editJournal = function(journalId) {
+            const journal = journals.find(j => j.id === journalId);
+            if (journal) {
+                editingJournalId = journalId;
+                document.getElementById('jurnalTanggal').value = journal.date;
+                document.getElementById('jurnalKelas').value = journal.class;
+                document.getElementById('jurnalJam').value = journal.jam || '';
+                document.getElementById('jurnalMateri').value = journal.materi || '';
+                document.getElementById('jurnalAktivitas').value = journal.aktivitas || '';
+                document.getElementById('jurnalIzin').value = journal.izin || 0;
+                document.getElementById('jurnalSakit').value = journal.sakit || 0;
+                document.getElementById('jurnalTanpaKet').value = journal.tanpaKet || 0;
+                
+                showTeacherTab('input-jurnal');
+                updateJurnalAbsenRekap(false);
+                showNotification('Data jurnal dimuat untuk diedit!');
+            }
+        }
+        
+        window.updateJurnalAbsenRekap = function(showSuccessNotification = true) {
+            const tanggal = document.getElementById('jurnalTanggal').value;
+            const kelas = document.getElementById('jurnalKelas').value;
+
+            const izinInput = document.getElementById('jurnalIzin');
+            const sakitInput = document.getElementById('jurnalSakit');
+            const tanpaKetInput = document.getElementById('jurnalTanpaKet');
+
+            // Reset to 0 before checking
+            izinInput.value = 0;
+            sakitInput.value = 0;
+            tanpaKetInput.value = 0;
+            
+            if (!tanggal || !kelas) return;
+            
+            const attendanceRecord = attendance.find(record => record.date === tanggal && record.class === kelas);
+            
+            if (attendanceRecord && attendanceRecord.students) {
+                let izinCount = 0;
+                let sakitCount = 0;
+                let tanpaKetCount = 0;
+                
+                attendanceRecord.students.forEach(student => {
+                    if (student.status === 'izin') izinCount++;
+                    else if (student.status === 'sakit') sakitCount++;
+                    else if (student.status === 'tanpaKet') tanpaKetCount++;
+                });
+                
+                izinInput.value = izinCount;
+                sakitInput.value = sakitCount;
+                tanpaKetInput.value = tanpaKetCount;
+                if(showSuccessNotification) {
+                    showNotification('Data absensi berhasil dimuat.', 'success');
+                }
+            } else {
+                 showNotification('Data absensi untuk tanggal dan kelas ini tidak ditemukan. Input absensi terlebih dahulu.', 'error');
+            }
+        }
+
+
+        window.deleteJournal = function(journalId) {
+            showConfirmation('Apakah Anda yakin ingin menghapus jurnal ini?', async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/journals`, journalId));
+                showNotification('Jurnal berhasil dihapus!');
+            });
+        }
+
+        window.filterTeacherJurnal = () => loadTeacherJurnal();
+
+        window.printTeacherJurnal = function() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [215.5, 330] });
+                
+                const teacherName = users.find(u => u.username === currentUser).fullName;
+                
+                const filterType = document.getElementById('teacherJurnalFilter').value;
+                const selectedDate = document.getElementById('teacherJurnalDate').value;
+                const selectedMonth = document.getElementById('teacherJurnalMonth').value;
+                const selectedWeek = document.getElementById('teacherJurnalWeek').value;
+                
+                let filteredJournals = journals.filter(j => j.teacher === currentUser);
+                
+                if (filterType === 'harian' && selectedDate) {
+                    filteredJournals = filteredJournals.filter(j => j.date === selectedDate);
+                } else if (filterType === 'mingguan' && selectedMonth && selectedWeek) {
+                    const [year, month] = selectedMonth.split('-');
+                    const weekNumber = parseInt(selectedWeek);
+                    filteredJournals = filteredJournals.filter(j => {
+                        const journalDate = new Date(j.date);
+                        if (journalDate.getFullYear() != year || journalDate.getMonth() + 1 != month) return false;
+                        const firstDay = new Date(year, month - 1, 1);
+                        const weekOfMonth = Math.ceil((journalDate.getDate() + firstDay.getDay()) / 7);
+                        return weekOfMonth === weekNumber;
+                    });
+                } else if (filterType === 'bulanan' && selectedMonth) {
+                    filteredJournals = filteredJournals.filter(j => j.date.startsWith(selectedMonth));
+                }
+                
+                doc.setFont('times', 'normal');
+                doc.setFontSize(16);
+                doc.text('REKAP JURNAL MENGAJAR', doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Guru: ${teacherName}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+                doc.text(`Semester ${systemSettings.semester || ''} - ${systemSettings.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 50, { align: 'center' });
+                
+                let periodText = '';
+                const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+                if (filterType === 'harian' && selectedDate) {
+                    const date = new Date(selectedDate);
+                    periodText = `Tanggal: ${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+                } else if (selectedMonth) {
+                    const [year, month] = selectedMonth.split('-');
+                    const monthName = monthNames[parseInt(month) - 1];
+                    periodText = filterType === 'mingguan' && selectedWeek ? `Periode: Minggu ${selectedWeek}, ${monthName} ${year}` : `Periode: ${monthName} ${year}`;
+                }
+                if (periodText) doc.text(periodText, doc.internal.pageSize.getWidth() / 2, 60, { align: 'center' });
+                
+                const tableData = sortJournals(filteredJournals).map((journal, i) => [
+                    i + 1, formatDateToDDMMYYYY(journal.date), journal.class, journal.jam || '-', journal.materi || '-', journal.aktivitas || '-', journal.izin, journal.sakit, journal.tanpaKet
+                ]);
+                
+                const availableWidth = doc.internal.pageSize.getWidth() - 20;
+                
+                doc.autoTable({
+                    head: [['No', 'Tanggal', 'Kelas', 'Jam Ke', 'Materi', 'Aktivitas Selama Pembelajaran', 'I', 'S', 'TK']],
+                    body: tableData,
+                    startY: periodText ? 70 : 60,
+                    margin: { left: 10, right: 10 },
+                    tableWidth: availableWidth,
+                    styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', halign: 'center' },
+                    columnStyles: { 0: { cellWidth: availableWidth * 0.036 }, 1: { cellWidth: availableWidth * 0.072 }, 2: { cellWidth: availableWidth * 0.048 }, 3: { cellWidth: availableWidth * 0.072 }, 4: { cellWidth: availableWidth * 0.186, halign: 'justify' }, 5: { cellWidth: 'auto', halign: 'justify' }, 6: { cellWidth: availableWidth * 0.06 }, 7: { cellWidth: availableWidth * 0.06 }, 8: { cellWidth: availableWidth * 0.06 } }
+                });
+                
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFontSize(10);
+                doc.setFont('times', 'normal');
+                doc.text('Kepala Sekolah', 20, finalY);
+                doc.text(systemSettings.kepalaSekolah || '', 20, finalY + 20);
+                
+                doc.save('rekap-jurnal-mengajar.pdf');
+                showNotification('PDF berhasil diunduh!');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showNotification('Gagal membuat PDF.', 'error');
+            }
+        }
+
+        // Attendance Management
+        let editingAttendanceId = null;
+        
+        function loadAttendanceList(dataToRender) {
+            const tbody = document.getElementById('attendanceListTable');
+            tbody.innerHTML = '';
+            
+            const records = dataToRender || attendance.filter(a => a.teacher === currentUser);
+
+            records.sort((a,b) => b.date.localeCompare(a.date)).forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm">${formatDateToDDMMYYYY(record.date)}</td>
+                    <td class="px-4 py-3 text-sm">${record.class}</td>
+                    <td class="px-4 py-3 text-sm">${record.students.length}</td>
+                    <td class="px-4 py-3 text-sm flex flex-wrap gap-1">
+                        <button onclick="lihatAbsensi('${record.id}')" class="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600">Lihat</button>
+                        <button onclick="editAttendance('${record.id}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">Edit</button>
+                        <button onclick="deleteAttendance('${record.id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        window.closeAttendanceDetailModal = () => document.getElementById('attendanceDetailModal').classList.add('hidden');
+
+        window.lihatAbsensi = function(id) {
+            const data = attendance.find(a => a.id === id);
+            if (!data) return showNotification("Data tidak ditemukan.", "error");
+
+            document.getElementById('attendanceDetailTitle').textContent = `Absensi ${data.class} - ${formatDateToDDMMYYYY(data.date)}`;
+            document.getElementById('attendanceDetailList').innerHTML = data.students
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((s, i) => `<p>${i + 1}. ${s.name} - <strong>${s.status}</strong></p>`).join('');
+            document.getElementById('attendanceDetailModal').classList.remove('hidden');
+        }
+
+        window.editAttendance = function(attendanceId) {
+            const record = attendance.find(a => a.id === attendanceId);
+            if (record) {
+                editingAttendanceId = attendanceId;
+                document.getElementById('absenTanggal').value = record.date;
+                document.getElementById('absenKelas').value = record.class;
+                
+                loadStudentsForAbsen().then(() => {
+                     record.students.forEach(student => {
+                        const radio = document.querySelector(`input[name="absen_${student.nisn}"][value="${student.status}"]`);
+                        if (radio) radio.checked = true;
+                    });
+                });
+                showNotification('Data absensi dimuat untuk diedit!');
+            }
+        }
+        
+        window.deleteAttendance = function(attendanceId) {
+            showConfirmation('Apakah Anda yakin ingin menghapus data absensi ini?', async () => {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/attendance`, attendanceId));
+                showNotification('Data absensi berhasil dihapus!');
+            });
+        }
+        
+        window.loadStudentsForAbsen = async function() {
+            const kelas = document.getElementById('absenKelas').value;
+            const container = document.getElementById('absenStudentList');
+            container.innerHTML = '';
+            if (!kelas) return;
+            
+            const classStudents = students.filter(s => s.class === kelas).sort((a, b) => a.name.localeCompare(b.name));
+            
+            if (classStudents.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">Tidak ada siswa di kelas ini.</p>';
+                return;
+            }
+            
+            classStudents.forEach(student => {
+                const studentDiv = document.createElement('div');
+                studentDiv.className = 'border rounded-lg p-4';
+                studentDiv.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
+                        <span class="font-medium">${student.name}</span>
+                        <span class="text-sm text-gray-500">NISN: ${student.nisn}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2">
+                        <label class="flex items-center"><input type="radio" name="absen_${student.nisn}" value="hadir" class="mr-2" checked />Hadir</label>
+                        <label class="flex items-center"><input type="radio" name="absen_${student.nisn}" value="izin" class="mr-2" />Izin</label>
+                        <label class="flex items-center"><input type="radio" name="absen_${student.nisn}" value="sakit" class="mr-2" />Sakit</label>
+                        <label class="flex items-center"><input type="radio" name="absen_${student.nisn}" value="tanpaKet" class="mr-2" />Tanpa Ket.</label>
+                    </div>
+                `;
+                container.appendChild(studentDiv);
+            });
+        }
+
+        window.saveAbsensi = async function() {
+            const tanggal = document.getElementById('absenTanggal').value;
+            const kelas = document.getElementById('absenKelas').value;
+            
+            if (!tanggal || !kelas) return showNotification('Pilih tanggal dan kelas!', 'error');
+            
+            const attendanceData = students.filter(s => s.class === kelas).map(student => ({
+                nisn: student.nisn,
+                name: student.name,
+                status: document.querySelector(`input[name="absen_${student.nisn}"]:checked`).value
+            }));
+            
+            const attendanceRecord = { date: tanggal, class: kelas, teacher: currentUser, students: attendanceData };
+            const docId = editingAttendanceId || `${tanggal}_${kelas}`;
+
+            await setDoc(doc(db, `artifacts/${appId}/public/data/attendance`, docId), attendanceRecord);
+            const message = editingAttendanceId ? 'Absensi berhasil diperbarui!' : 'Absensi berhasil disimpan!';
+            showNotification(message);
+            
+            // PERUBAHAN: Refresh halaman setelah 1.5 detik agar notifikasi terlihat
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+
+        function loadTeacherAbsen() {
+            const tbody = document.getElementById('teacherAbsenTable');
+            tbody.innerHTML = '';
+            
+            const filterType = document.getElementById('teacherAbsenFilter').value;
+            const selectedClass = document.getElementById('teacherAbsenKelas').value;
+            const selectedDay = document.getElementById('teacherAbsenDay').value;
+            const selectedMonth = document.getElementById('teacherAbsenMonth').value;
+            const fromMonth = document.getElementById('teacherAbsenFromMonth').value;
+            const fromYear = document.getElementById('teacherAbsenFromYear').value;
+            const toMonth = document.getElementById('teacherAbsenToMonth').value;
+            const toYear = document.getElementById('teacherAbsenToYear').value;
+            
+            const attendanceSummary = {};
+            
+            students.forEach(student => {
+                if (!selectedClass || student.class === selectedClass) {
+                    attendanceSummary[student.nisn] = { ...student, hadir: 0, izin: 0, sakit: 0, tanpaKet: 0, total: 0 };
+                }
+            });
+            
+            let filteredAttendance = attendance;
+
+            if (filterType === 'harian' && selectedDay) {
+                filteredAttendance = attendance.filter(record => record.date === selectedDay);
+            } else if (filterType === 'bulanan' && selectedMonth) {
+                filteredAttendance = attendance.filter(record => record.date.startsWith(selectedMonth));
+            } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
+                const fromDate = new Date(parseInt(fromYear), parseInt(fromMonth) - 1, 1);
+                const toDate = new Date(parseInt(toYear), parseInt(toMonth), 0);
+                filteredAttendance = attendance.filter(record => new Date(record.date) >= fromDate && new Date(record.date) <= toDate);
+            }
+            
+            if (selectedClass) {
+                filteredAttendance = filteredAttendance.filter(record => record.class === selectedClass);
+            }
+            
+            filteredAttendance.forEach(record => {
+                record.students.forEach(student => {
+                    if (attendanceSummary[student.nisn]) {
+                        attendanceSummary[student.nisn][student.status]++;
+                        attendanceSummary[student.nisn].total++;
+                    }
+                });
+            });
+            
+            const sortedData = Object.values(attendanceSummary).sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedData.forEach((student, i) => {
+                const persentase = student.total > 0 ? ((student.hadir / student.total) * 100).toFixed(1) : '0.0';
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm">${i + 1}</td>
+                    <td class="px-4 py-3 text-sm">${student.nisn}</td>
+                    <td class="px-4 py-3 text-sm">${student.name}</td>
+                    <td class="px-4 py-3 text-sm">${student.hadir}</td>
+                    <td class="px-4 py-3 text-sm">${student.izin}</td>
+                    <td class="px-4 py-3 text-sm">${student.sakit}</td>
+                    <td class="px-4 py-3 text-sm">${student.tanpaKet}</td>
+                    <td class="px-4 py-3 text-sm">${persentase}%</td>
+                `;
+            });
+        }
+
+        window.filterTeacherAbsen = () => loadTeacherAbsen();
+
+        window.printTeacherAbsen = function() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                const teacherName = users.find(u => u.username === currentUser).fullName;
+                
+                const filterType = document.getElementById('teacherAbsenFilter').value;
+                const selectedClass = document.getElementById('teacherAbsenKelas').value;
+                const selectedDay = document.getElementById('teacherAbsenDay').value;
+                const selectedMonth = document.getElementById('teacherAbsenMonth').value;
+                const fromMonth = document.getElementById('teacherAbsenFromMonth').value;
+                const fromYear = document.getElementById('teacherAbsenFromYear').value;
+                const toMonth = document.getElementById('teacherAbsenToMonth').value;
+                const toYear = document.getElementById('teacherAbsenToYear').value;
+                
+                doc.setFont('times', 'normal');
+                doc.setFontSize(16);
+                doc.text('REKAP ABSENSI SISWA', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Guru: ${teacherName}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+                doc.text(`Semester ${systemSettings.semester || ''} - ${systemSettings.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
+                
+                let yPos = 50;
+                const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+                if (filterType === 'harian' && selectedDay) {
+                    const date = new Date(selectedDay);
+                    doc.text(`Tanggal: ${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 20, yPos);
+                    yPos += 10;
+                } else if (filterType === 'bulanan' && selectedMonth) {
+                    const [year, month] = selectedMonth.split('-');
+                    doc.text(`Periode: ${monthNames[parseInt(month) - 1]} ${year}`, 20, yPos);
+                    yPos += 10;
+                } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
+                    doc.text(`Periode: ${monthNames[parseInt(fromMonth)-1]} ${fromYear} - ${monthNames[parseInt(toMonth)-1]} ${toYear}`, 20, yPos);
+                    yPos += 10;
+                }
+                
+                if (selectedClass) {
+                    doc.text(`Kelas: ${selectedClass}`, 20, yPos);
+                    yPos += 10;
+                }
+                
+                const tableData = Array.from(document.getElementById('teacherAbsenTable').rows).map(row => Array.from(row.cells).map(cell => cell.innerText));
+                
+                const availableWidth = doc.internal.pageSize.getWidth() - 20;
+                const noWidth = availableWidth * 0.06, nisnWidth = availableWidth * 0.15, tkWidth = availableWidth * 0.06, hisWidth = tkWidth, hadir = availableWidth * 0.10;
+                const namaWidth = availableWidth - noWidth - nisnWidth - (hisWidth * 3) - tkWidth - hadir;
+                
+                doc.autoTable({
+                    head: [['No', 'NISN', 'Nama', 'H', 'I', 'S', 'TK', 'Hadir %']],
+                    body: tableData,
+                    startY: yPos + 3,
+                    margin: { left: 10, right: 10 },
+                    tableWidth: availableWidth,
+                    styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
+                    headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', halign: 'center' },
+                    columnStyles: { 2: { halign: 'left' } }
+                });
+                
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFontSize(10);
+                doc.setFont('times', 'normal');
+                doc.text('Kepala Sekolah', 20, finalY);
+                doc.text(systemSettings.kepalaSekolah || '', 20, finalY + 20);
+                
+                doc.save('rekap-absensi-siswa.pdf');
+                showNotification('PDF berhasil diunduh!');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showNotification('Gagal membuat PDF.', 'error');
+            }
+        }
+
+        window.filterDaftarAbsensi = function() {
+            const filter = document.getElementById('absensiInputFilter').value;
+            const date = document.getElementById('absensiInputTanggal').value;
+            const month = document.getElementById('absensiInputBulan').value;
+            let filtered = attendance.filter(item => item.teacher === currentUser);
+
+            if (filter === 'harian' && date) filtered = filtered.filter(item => item.date === date);
+            else if (filter === 'bulanan' && month) filtered = filtered.filter(item => item.date.startsWith(month));
+
+            loadAttendanceList(filtered);
+        }
+
+        function exportTableToExcel(tableId, filename = 'data.xlsx') {
+            const table = document.getElementById(tableId);
+            if (!table) return showNotification(`Tabel dengan id "${tableId}" tidak ditemukan.`, 'error');
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+            XLSX.writeFile(wb, filename);
+        }
+
+        window.downloadAdminJurnalCSV = function() {
+            const table = document.getElementById("adminJurnalFullTable");
+            let csv = [];
+            
+            for (let row of table.rows) {
+                let rowData = [];
+                for (let cell of row.cells) {
+                    let cellText = cell.innerText.replace(/"/g, '""');
+                    rowData.push(`"${cellText}"`);
+                }
+                csv.push(rowData.join(","));
+            }
+
+            const csvContent = "sep=,\n" + csv.join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "rekap_jurnal.csv";
+            link.click();
+        }
+
+
+        window.downloadAdminAbsenExcel = () => exportTableToExcel('adminAbsenFullTable', 'rekap_absensi.xlsx');
+        window.downloadTeacherHoursExcel = () => exportTableToExcel('teacherHoursStatsTable', 'statistik_jam_mengajar.xlsx');
+
+        window.printTeacherHoursPDF = function () {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Statistik Jam Mengajar Guru", 14, 15);
+            doc.autoTable({ html: '#teacherHoursStatsTable', startY: 20 });
+            doc.save("statistik_jam_mengajar.pdf");
+        }
+
+        function updateTeacherMonthlyStats() {
+            const user = currentUser;
+            if (!user) return;
+
+            const userJournals = journals.filter(j => j.teacher === user);
+            const monthlyHours = {};
+
+            userJournals.forEach(j => {
+                const monthKey = j.date.substring(0, 7).split('-').reverse().join('-'); // YYYY-MM to MM-YYYY
+                monthlyHours[monthKey] = (monthlyHours[monthKey] || 0) + countHours(j.jam);
+            });
+
+            const tableBody = document.getElementById('teacherMonthlyStatsTable');
+            tableBody.innerHTML = '';
+            Object.entries(monthlyHours).sort((a, b) => b[0].localeCompare(a[0])).forEach(([month, total]) => {
+                tableBody.innerHTML += `<tr><td class="px-4 py-2">${month}</td><td class="px-4 py-2">${total}</td></tr>`;
+            });
+        }
+        
+        window.importFromGoogleSheet = async function() {
+            showConfirmation('Apakah Anda yakin ingin mengimpor data siswa dan kelas dari Google Sheet? Data siswa yang ada dengan NISN yang sama akan diperbarui.', async () => {
+                showNotification('Mengimpor data, mohon tunggu...');
+                const url = 'https://script.google.com/macros/s/AKfycbx44kJLgw8i0cMe9Pbj5A0VTa_OVnuLXJUGXjRXDSrPKVCaZcM30kFBqmUDz0BRAo_uSQ/exec';
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    if (!data || !Array.isArray(data)) {
+                         showNotification('Format data dari Google Sheet tidak valid.', 'error');
+                         return;
+                    }
+
+                    const studentsToImport = data;
+                    const uniqueClasses = new Set();
+                    studentsToImport.forEach(student => {
+                        if (student.kelas) {
+                            uniqueClasses.add(String(student.kelas).trim());
+                        }
+                    });
+
+                    const batch = writeBatch(db);
+
+                    // Add/update classes
+                    const existingClasses = new Set(classes.map(c => c.name));
+                    uniqueClasses.forEach(className => {
+                        if (className && !existingClasses.has(className)) {
+                            const classRef = doc(collection(db, `artifacts/${appId}/public/data/classes`));
+                            batch.set(classRef, { id: classRef.id, name: className });
+                        }
+                    });
+
+                    // Add/update students
+                    let processedCount = 0;
+                    studentsToImport.forEach(student => {
+                        if (student.nisn && student.nama && student.kelas) {
+                            const studentRef = doc(db, `artifacts/${appId}/public/data/students`, String(student.nisn));
+                            batch.set(studentRef, {
+                                id: String(student.nisn),
+                                nisn: String(student.nisn),
+                                name: String(student.nama).trim(),
+                                class: String(student.kelas).trim()
+                            });
+                            processedCount++;
+                        }
+                    });
+
+                    await batch.commit();
+                    await updateClassStudentCounts(); // Update all class counts after import
+
+                    showNotification(`Impor berhasil! ${processedCount} siswa dan ${uniqueClasses.size} kelas unik diproses.`, 'success');
+                } catch (error) {
+                    console.error('Error importing from Google Sheet:', error);
+                    showNotification('Gagal mengimpor data. Periksa koneksi internet dan format Google Sheet.', 'error');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
