@@ -538,6 +538,11 @@
                             <input type="date" id="absensiInputTanggal" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
                             <input type="month" id="absensiInputBulan" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
                             <button onclick="filterDaftarAbsensi()" class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded-lg">Filter</button>
+                            <button onclick="filterDaftarAbsensi()" class="w-full sm:w-auto bg-gray-100 text-gray-600 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center justify-center" title="Refresh">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
                         </div>
 
                         <div class="overflow-x-auto">
@@ -2600,14 +2605,18 @@
             const attendanceRecord = { date: tanggal, class: kelas, teacher: currentUser, students: attendanceData };
             const docId = editingAttendanceId || `${tanggal}_${kelas}`;
 
-            await setDoc(doc(db, `artifacts/${appId}/public/data/attendance`, docId), attendanceRecord);
-            const message = editingAttendanceId ? 'Absensi berhasil diperbarui!' : 'Absensi berhasil disimpan!';
-            showNotification(message);
-            
-            // PERUBAHAN: Refresh halaman setelah 1.5 detik agar notifikasi terlihat
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
+            try {
+                await setDoc(doc(db, `artifacts/${appId}/public/data/attendance`, docId), attendanceRecord);
+                const message = editingAttendanceId ? 'Absensi berhasil diperbarui!' : 'Absensi berhasil disimpan!';
+                showNotification(message);
+                
+                editingAttendanceId = null;
+                loadStudentsForAbsen();
+                filterDaftarAbsensi();
+            } catch (error) {
+                console.error("Error saving attendance:", error);
+                showNotification("Gagal menyimpan absensi: " + error.message, "error");
+            }
         }
 
         function loadTeacherAbsen() {
@@ -2886,4 +2895,3 @@
     </script>
 </body>
 </html>
-
