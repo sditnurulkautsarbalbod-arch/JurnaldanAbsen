@@ -467,6 +467,15 @@
                             <textarea id="jurnalAktivitas" required rows="3" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Deskripsikan aktivitas pembelajaran..."></textarea>
                         </div>
                         
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="block text-sm font-medium">Rekap Kehadiran Siswa</label>
+                            <button type="button" onclick="updateJurnalAbsenRekap(true)" class="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded hover:bg-blue-200 flex items-center gap-1 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Refresh Data Absen
+                            </button>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-medium mb-2">Izin</label>
@@ -538,11 +547,6 @@
                             <input type="date" id="absensiInputTanggal" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
                             <input type="month" id="absensiInputBulan" class="w-full sm:w-auto px-4 py-2 border rounded-lg hidden">
                             <button onclick="filterDaftarAbsensi()" class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded-lg">Filter</button>
-                            <button onclick="filterDaftarAbsensi()" class="w-full sm:w-auto bg-gray-100 text-gray-600 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center justify-center" title="Refresh">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                            </button>
                         </div>
 
                         <div class="overflow-x-auto">
@@ -1016,6 +1020,11 @@
                      else if (currentRole === 'guru') {
                         filterDaftarAbsensi(); // Use filter function to respect current filters
                         loadTeacherAbsen();
+                        // Automatically refresh Journal counts if on the input-jurnal tab
+                        const activeTab = document.querySelector('.teacher-content:not(.hidden)');
+                        if (activeTab && activeTab.id === 'teacher-input-jurnal') {
+                            updateJurnalAbsenRekap(false); // false = no notification
+                        }
                     }
                 }
             });
@@ -2211,18 +2220,43 @@
             document.querySelectorAll('.teacher-content').forEach(content => content.classList.add('hidden'));
             document.getElementById(`teacher-${tabName}`).classList.remove('hidden');
             
-            document.querySelectorAll('.teacher-tab').forEach(tab => {
+            // Reset all tabs
+            const tabs = document.querySelectorAll('.teacher-tab');
+            tabs.forEach(tab => {
                 tab.classList.remove('border-blue-500', 'text-blue-600');
                 tab.classList.add('border-transparent', 'text-gray-500');
             });
             
-            event.target.classList.remove('border-transparent', 'text-gray-500');
-            event.target.classList.add('border-blue-500', 'text-blue-600');
+            // Highlight the active tab
+            // We try to find the button that triggered this or match by onclick content
+            let activeTab = null;
+            if (event && event.target && event.target.classList.contains('teacher-tab')) {
+                activeTab = event.target;
+            } else {
+                // Fallback for programmatic calls (like from editJournal)
+                for (const tab of tabs) {
+                    if (tab.getAttribute('onclick').includes(`'${tabName}'`)) {
+                        activeTab = tab;
+                        break;
+                    }
+                }
+            }
+            
+            if (activeTab) {
+                activeTab.classList.remove('border-transparent', 'text-gray-500');
+                activeTab.classList.add('border-blue-500', 'text-blue-600');
+            }
             
             if (tabName === 'input-jurnal' || tabName === 'input-absen') {
                 const currentDate = formatDate(new Date());
-                if (tabName === 'input-jurnal') document.getElementById('jurnalTanggal').value = currentDate;
-                else if (tabName === 'input-absen') document.getElementById('absenTanggal').value = currentDate;
+                if (tabName === 'input-jurnal') {
+                     const dateEl = document.getElementById('jurnalTanggal');
+                     if (!dateEl.value) dateEl.value = currentDate;
+                     updateJurnalAbsenRekap(false);
+                } else if (tabName === 'input-absen') {
+                     const dateEl = document.getElementById('absenTanggal');
+                     if (!dateEl.value) dateEl.value = currentDate;
+                }
             }
         }
 
@@ -2401,7 +2435,9 @@
                     showNotification('Data absensi berhasil dimuat.', 'success');
                 }
             } else {
-                 showNotification('Data absensi untuk tanggal dan kelas ini tidak ditemukan. Input absensi terlebih dahulu.', 'error');
+                if(showSuccessNotification) {
+                    showNotification('Data absensi untuk tanggal dan kelas ini tidak ditemukan. Input absensi terlebih dahulu.', 'error');
+                }
             }
         }
 
