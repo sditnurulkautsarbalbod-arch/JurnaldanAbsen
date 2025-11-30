@@ -119,6 +119,9 @@
                         <button onclick="filterAdminJurnal()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
                             Filter
                         </button>
+                        <button onclick="deleteFilteredAdminJurnal()" class="w-full sm:w-auto bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
+                            Hapus
+                        </button>
                         <div class="flex gap-2 w-full sm:w-auto">
                             <button onclick="printAdminJurnal()" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
                                 PDF
@@ -161,6 +164,9 @@
                             </button>
                             <button onclick="downloadTeacherHoursExcel()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
                                 Excel
+                            </button>
+                            <button onclick="deleteFilteredAdminJurnal()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                                Hapus
                             </button>
                         </div>
                         <div class="overflow-x-auto">
@@ -233,6 +239,9 @@
                         </select>
                         <button onclick="filterAdminAbsen()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
                             Filter
+                        </button>
+                        <button onclick="deleteFilteredAdminAbsen()" class="w-full sm:w-auto bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
+                            Hapus
                         </button>
                         <div class="flex gap-2 w-full sm:w-auto">
                             <button onclick="printAdminAbsen()" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
@@ -407,6 +416,9 @@
         </div>
     </div>
 
+    <!-- ... (Rest of HTML structure) ... -->
+    <!-- Teacher Dashboard & Modals logic remain, script follows -->
+    
     <!-- Teacher Dashboard -->
     <div id="teacherDashboard" class="hidden">
         <!-- Header -->
@@ -888,7 +900,7 @@
     </div>
 
     <script type="module">
-        // ... (Firebase Imports & Config remain the same) ...
+        // ... (Firebase Imports & Config) ...
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -982,11 +994,9 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                console.log("User is signed in:", user.uid);
                 await loadInitialData();
                 checkAutoLogin();
             } else {
-                console.log("User is signed out. Signing in anonymously.");
                  if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     try {
                         await signInWithCustomToken(auth, __initial_auth_token);
@@ -1085,22 +1095,18 @@
         function renderPagination(containerId, currentPage, totalPages, functionName) {
             const container = document.getElementById(containerId);
             if (!container) return;
-            
             container.innerHTML = '';
             if (totalPages <= 1) return;
-
             const prevBtn = document.createElement('button');
             prevBtn.className = 'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-sm';
             prevBtn.textContent = 'Sebelumnya';
             prevBtn.disabled = currentPage === 1;
             prevBtn.onclick = () => window[functionName](-1);
             container.appendChild(prevBtn);
-
             const info = document.createElement('span');
             info.className = 'px-3 py-1 text-gray-700 text-sm';
             info.textContent = `Halaman ${currentPage} dari ${totalPages}`;
             container.appendChild(info);
-
             const nextBtn = document.createElement('button');
             nextBtn.className = 'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-sm';
             nextBtn.textContent = 'Selanjutnya';
@@ -1194,8 +1200,12 @@
             loadUserTable();
             loadStudentTable();
             loadClassTable();
-            loadSystemSettings();
             
+            // Ensure systemSettings is loaded/defined before usage if possible, though defaults are handled.
+             if (typeof loadSystemSettings === 'function') {
+                loadSystemSettings();
+            }
+
             document.getElementById('adminJurnalFilter').addEventListener('change', function() {
                 const dateInput = document.getElementById('adminJurnalDate');
                 const monthInput = document.getElementById('adminJurnalMonth');
@@ -1326,6 +1336,30 @@
             renderPagination('adminJurnalPagination', page, totalPages, 'changeAdminJurnalPage');
             loadTeacherHourStats();
         }
+        
+        // NEW: Delete Filtered Admin Jurnal Function
+        window.deleteFilteredAdminJurnal = function() {
+            const filtered = getFilteredJournals();
+            if (filtered.length === 0) return showNotification('Tidak ada data yang sesuai filter untuk dihapus.', 'error');
+            
+            showConfirmation(`Apakah Anda yakin ingin menghapus ${filtered.length} data jurnal ini? Tindakan ini tidak dapat dibatalkan.`, async () => {
+                try {
+                    const chunks = [];
+                    const temp = [...filtered];
+                    while (temp.length > 0) chunks.push(temp.splice(0, 400));
+                    
+                    for (const chunk of chunks) {
+                        const batch = writeBatch(db);
+                        chunk.forEach(j => batch.delete(doc(db, `artifacts/${appId}/public/data/journals`, j.id)));
+                        await batch.commit();
+                    }
+                    showNotification('Data jurnal berhasil dihapus!');
+                } catch (error) {
+                    console.error(error);
+                    showNotification('Gagal menghapus data.', 'error');
+                }
+            });
+        }
 
         function countHours(jamString) {
             if (!jamString || typeof jamString !== 'string') return 0;
@@ -1443,6 +1477,57 @@
                 tbody.appendChild(row);
             });
             renderPagination('adminAbsenPagination', page, totalPages, 'changeAdminAbsenPage');
+        }
+        
+        // NEW: Delete Filtered Admin Absen Function
+        window.deleteFilteredAdminAbsen = function() {
+            const filterType = document.getElementById('adminAbsenFilter').value;
+            const selectedClass = document.getElementById('adminAbsenKelas').value;
+            const selectedDay = document.getElementById('adminAbsenDay').value;
+            const selectedMonth = document.getElementById('adminAbsenMonth').value;
+            const fromMonth = document.getElementById('adminAbsenFromMonth').value;
+            const fromYear = document.getElementById('adminAbsenFromYear').value;
+            const toMonth = document.getElementById('adminAbsenToMonth').value;
+            const toYear = document.getElementById('adminAbsenToYear').value;
+
+            let filteredRecords = attendance;
+
+            if (filterType === 'harian' && selectedDay) {
+                filteredRecords = filteredRecords.filter(r => r.date === selectedDay);
+            } else if (filterType === 'bulanan' && selectedMonth) {
+                filteredRecords = filteredRecords.filter(r => r.date.startsWith(selectedMonth));
+            } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
+                const fromDate = new Date(parseInt(fromYear), parseInt(fromMonth) - 1, 1);
+                const toDate = new Date(parseInt(toYear), parseInt(toMonth), 0);
+                filteredRecords = filteredRecords.filter(r => {
+                    const d = new Date(r.date);
+                    return d >= fromDate && d <= toDate;
+                });
+            }
+
+            if (selectedClass) {
+                filteredRecords = filteredRecords.filter(r => r.class === selectedClass);
+            }
+            
+            if (filteredRecords.length === 0) return showNotification('Tidak ada data absensi yang sesuai filter.', 'error');
+
+            showConfirmation(`Apakah Anda yakin ingin menghapus ${filteredRecords.length} catatan absensi? Data statistik siswa akan berubah.`, async () => {
+                 try {
+                    const chunks = [];
+                    const temp = [...filteredRecords];
+                    while (temp.length > 0) chunks.push(temp.splice(0, 400));
+                    
+                    for (const chunk of chunks) {
+                        const batch = writeBatch(db);
+                        chunk.forEach(r => batch.delete(doc(db, `artifacts/${appId}/public/data/attendance`, r.id)));
+                        await batch.commit();
+                    }
+                    showNotification('Data absensi berhasil dihapus!');
+                } catch (error) {
+                    console.error(error);
+                    showNotification('Gagal menghapus data.', 'error');
+                }
+            });
         }
 
         window.filterAdminJurnal = () => { paginationState.adminJurnal = 1; loadAdminJurnal(); }
