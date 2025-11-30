@@ -24,6 +24,13 @@
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
         }
+        .sync-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -66,9 +73,18 @@
             <div class="px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-wrap justify-between items-center py-3 gap-2">
                     <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard Admin</h1>
-                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
-                        Keluar
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <span id="lastSyncAdmin" class="text-xs text-gray-500 hidden sm:inline"></span>
+                        <button onclick="syncData()" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition text-sm flex items-center gap-1">
+                            <svg id="syncIconAdmin" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Sync
+                        </button>
+                        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                            Keluar
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -119,9 +135,6 @@
                         <button onclick="filterAdminJurnal()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
                             Filter
                         </button>
-                        <button onclick="deleteFilteredAdminJurnal()" class="w-full sm:w-auto bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
-                            Hapus
-                        </button>
                         <div class="flex gap-2 w-full sm:w-auto">
                             <button onclick="printAdminJurnal()" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
                                 PDF
@@ -164,9 +177,6 @@
                             </button>
                             <button onclick="downloadTeacherHoursExcel()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
                                 Excel
-                            </button>
-                            <button onclick="deleteFilteredAdminJurnal()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-                                Hapus
                             </button>
                         </div>
                         <div class="overflow-x-auto">
@@ -239,9 +249,6 @@
                         </select>
                         <button onclick="filterAdminAbsen()" class="w-full sm:w-auto bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
                             Filter
-                        </button>
-                        <button onclick="deleteFilteredAdminAbsen()" class="w-full sm:w-auto bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
-                            Hapus
                         </button>
                         <div class="flex gap-2 w-full sm:w-auto">
                             <button onclick="printAdminAbsen()" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
@@ -416,9 +423,6 @@
         </div>
     </div>
 
-    <!-- ... (Rest of HTML structure) ... -->
-    <!-- Teacher Dashboard & Modals logic remain, script follows -->
-    
     <!-- Teacher Dashboard -->
     <div id="teacherDashboard" class="hidden">
         <!-- Header -->
@@ -426,9 +430,18 @@
             <div class="px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-wrap justify-between items-center py-3 gap-2">
                     <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard Guru</h1>
-                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
-                        Keluar
-                    </button>
+                     <div class="flex items-center gap-2">
+                         <span id="lastSyncTeacher" class="text-xs text-gray-500 hidden sm:inline"></span>
+                        <button onclick="syncData()" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition text-sm flex items-center gap-1">
+                            <svg id="syncIconTeacher" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Sync
+                        </button>
+                        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                            Keluar
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -900,10 +913,9 @@
     </div>
 
     <script type="module">
-        // ... (Firebase Imports & Config) ...
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse(
             typeof __firebase_config !== "undefined"
@@ -920,8 +932,8 @@
         let currentRole = null;
         let editingId = null;
         let editingJournalId = null;
-        let lastJurnalData = {};
 
+        // --- MAIN DATA VARIABLES (From LocalStorage or Sync) ---
         let users = [];
         let classes = [];
         let students = [];
@@ -929,6 +941,12 @@
         let attendance = [];
         let systemSettings = {};
         
+        // --- DENORMALIZED INDEXES (In-Memory Maps for Fast Query) ---
+        // rekapJurnalMap: { [teacher_id]: { [YYYY-MM]: [Array of Journals] } }
+        let rekapJurnalMap = {}; 
+        // rekapAbsenMap: { [class_name]: { [YYYY-MM-DD]: AttendanceObject } }
+        let rekapAbsenMap = {};
+
         const ITEMS_PER_PAGE = 5;
         let paginationState = {
             adminJurnal: 1,
@@ -958,8 +976,113 @@
                 eyeIcon.classList.toggle('hidden');
                 eyeOffIcon.classList.toggle('hidden');
             });
+            
+            // Initial load from LocalStorage
+            loadDataFromLocalStorage();
         });
 
+        // --- DATA MANAGER & SYNC SYSTEM ---
+        
+        function saveToLocalStorage() {
+            localStorage.setItem('jg_users', JSON.stringify(users));
+            localStorage.setItem('jg_classes', JSON.stringify(classes));
+            localStorage.setItem('jg_students', JSON.stringify(students));
+            localStorage.setItem('jg_journals', JSON.stringify(journals));
+            localStorage.setItem('jg_attendance', JSON.stringify(attendance));
+            localStorage.setItem('jg_settings', JSON.stringify(systemSettings));
+        }
+
+        function loadDataFromLocalStorage() {
+            users = JSON.parse(localStorage.getItem('jg_users')) || [];
+            classes = JSON.parse(localStorage.getItem('jg_classes')) || [];
+            students = JSON.parse(localStorage.getItem('jg_students')) || [];
+            journals = JSON.parse(localStorage.getItem('jg_journals')) || [];
+            attendance = JSON.parse(localStorage.getItem('jg_attendance')) || [];
+            systemSettings = JSON.parse(localStorage.getItem('jg_settings')) || {};
+            
+            const lastSync = localStorage.getItem('jg_last_sync');
+            updateLastSyncUI(lastSync);
+            
+            buildIndexes(); // Denormalize immediately after loading
+        }
+        
+        // --- DENORMALIZATION / INDEXING LOGIC ---
+        // This runs after load or sync to speed up subsequent queries
+        function buildIndexes() {
+            rekapJurnalMap = {};
+            journals.forEach(j => {
+                if (!j.teacher || !j.date) return;
+                const month = j.date.substring(0, 7); // YYYY-MM
+                if (!rekapJurnalMap[j.teacher]) rekapJurnalMap[j.teacher] = {};
+                if (!rekapJurnalMap[j.teacher][month]) rekapJurnalMap[j.teacher][month] = [];
+                rekapJurnalMap[j.teacher][month].push(j);
+            });
+
+            rekapAbsenMap = {};
+            attendance.forEach(a => {
+                if (!a.class || !a.date) return;
+                if (!rekapAbsenMap[a.class]) rekapAbsenMap[a.class] = {};
+                rekapAbsenMap[a.class][a.date] = a;
+            });
+            
+            console.log("Indexes rebuilt:", { journals: Object.keys(rekapJurnalMap).length, attendance: Object.keys(rekapAbsenMap).length });
+        }
+
+        function updateLastSyncUI(timestamp) {
+            const timeStr = timestamp ? new Date(timestamp).toLocaleString('id-ID') : 'Belum pernah';
+            const els = [document.getElementById('lastSyncAdmin'), document.getElementById('lastSyncTeacher')];
+            els.forEach(el => { if(el) el.textContent = `Terakhir: ${timeStr}`; });
+        }
+
+        window.syncData = async function() {
+            const btnAdmin = document.getElementById('syncIconAdmin');
+            const btnTeacher = document.getElementById('syncIconTeacher');
+            const icons = [btnAdmin, btnTeacher].filter(Boolean);
+            
+            icons.forEach(ic => ic.classList.add('sync-spin'));
+            showNotification('Sedang sinkronisasi data...', 'info');
+
+            try {
+                const usersSnap = await getDocs(collection(db, `artifacts/${appId}/public/data/users`));
+                users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const classesSnap = await getDocs(collection(db, `artifacts/${appId}/public/data/classes`));
+                classes = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const studentsSnap = await getDocs(collection(db, `artifacts/${appId}/public/data/students`));
+                students = studentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const journalsSnap = await getDocs(collection(db, `artifacts/${appId}/public/data/journals`));
+                journals = journalsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const attendanceSnap = await getDocs(collection(db, `artifacts/${appId}/public/data/attendance`));
+                attendance = attendanceSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const settingsSnap = await getDoc(doc(db, `artifacts/${appId}/public/data/settings/main`));
+                if (settingsSnap.exists()) systemSettings = settingsSnap.data();
+
+                saveToLocalStorage();
+                const now = new Date().toISOString();
+                localStorage.setItem('jg_last_sync', now);
+                updateLastSyncUI(now);
+                
+                buildIndexes();
+                
+                // Refresh Current Views
+                if (currentUser) {
+                    if (currentRole === 'admin') initializeAdminDashboard();
+                    else initializeTeacherDashboard();
+                }
+                showNotification('Sinkronisasi selesai!', 'success');
+            } catch (error) {
+                console.error("Sync Error:", error);
+                showNotification('Gagal sinkronisasi data.', 'error');
+            } finally {
+                icons.forEach(ic => ic.classList.remove('sync-spin'));
+            }
+        }
+
+        // --- AUTH ---
         function formatDateToDDMMYYYY(dateStr) {
             if (!dateStr || typeof dateStr !== 'string' || !dateStr.includes('-')) return dateStr;
             const parts = dateStr.split('-');
@@ -972,7 +1095,10 @@
             const storedUserJSON = localStorage.getItem('currentUser');
             if (storedUserJSON) {
                 const storedUser = JSON.parse(storedUserJSON);
-                const userExists = users.find(u => u.username === storedUser.username && u.password === storedUser.password);
+                // Verify against currently loaded users if possible, or trust LS
+                const userExists = users.length > 0 
+                    ? users.find(u => u.username === storedUser.username && u.password === storedUser.password)
+                    : storedUser; 
 
                 if (userExists) {
                     currentUser = userExists.username;
@@ -994,119 +1120,35 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                await loadInitialData();
+                if (users.length === 0) await syncData(); // Auto sync first time if empty
                 checkAutoLogin();
             } else {
                  if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (error) {
-                        await signInAnonymously(auth);
-                    }
-                } else {
-                    await signInAnonymously(auth);
-                }
+                    try { await signInWithCustomToken(auth, __initial_auth_token); } 
+                    catch (error) { await signInAnonymously(auth); }
+                } else { await signInAnonymously(auth); }
             }
         });
 
-        async function loadInitialData() {
-            await seedInitialDataIfNeeded();
-
-            const usersCollection = collection(db, `artifacts/${appId}/public/data/users`);
-            const classesCollection = collection(db, `artifacts/${appId}/public/data/classes`);
-            const studentsCollection = collection(db, `artifacts/${appId}/public/data/students`);
-            const journalsCollection = collection(db, `artifacts/${appId}/public/data/journals`);
-            const attendanceCollection = collection(db, `artifacts/${appId}/public/data/attendance`);
-            const settingsDoc = doc(db, `artifacts/${appId}/public/data/settings/main`);
-
-            try {
-                const initialUserSnapshot = await getDocs(usersCollection);
-                users = initialUserSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            } catch (error) {
-                console.error("Error fetching initial users:", error);
-            }
-
-            onSnapshot(journalsCollection, (snapshot) => {
-                journals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentUser) {
-                    if (currentRole === 'admin') loadAdminJurnal();
-                    else if (currentRole === 'guru') loadTeacherJurnal();
-                }
-            });
-
-            onSnapshot(attendanceCollection, (snapshot) => {
-                attendance = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentUser) {
-                    if (currentRole === 'admin') loadAdminAbsen();
-                     else if (currentRole === 'guru') {
-                        filterDaftarAbsensi();
-                        loadTeacherAbsen();
-                    }
-                }
-            });
-
-            onSnapshot(usersCollection, (snapshot) => {
-                users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentRole === 'admin') loadUserTable();
-            });
-            
-            onSnapshot(classesCollection, (snapshot) => {
-                classes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentRole === 'admin') {
-                    loadClassTable();
-                }
-                populateClassDropdowns(); 
-            });
-
-            onSnapshot(studentsCollection, (snapshot) => {
-                students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentRole === 'admin') {
-                    loadStudentTable();
-                    updateTotalStudentCount();
-                }
-            });
-
-            onSnapshot(settingsDoc, (docSnap) => {
-                if (docSnap.exists()) {
-                    systemSettings = docSnap.data();
-                }
-            });
-        }
-        
-        async function seedInitialDataIfNeeded() {
-            const usersRef = collection(db, `artifacts/${appId}/public/data/users`);
-            const q = query(usersRef);
-            const snapshot = await getDocs(q);
-
-            if (snapshot.empty) {
-                const batch = writeBatch(db);
-                 const defaultUsers = [
-                    { id: 'admin', fullName: 'Administrator', username: 'admin', password: 'admin', role: 'admin' },
-                    { id: 'indah', fullName: 'Indah Sari, S.Pd., M.Pd.', username: 'indah', password: 'guru', role: 'guru' },
-                ];
-                defaultUsers.forEach(user => {
-                    const docRef = doc(usersRef, user.username); 
-                    batch.set(docRef, user);
-                });
-                await batch.commit();
-            }
-        }
-        
+        // --- HELPER FUNCTIONS ---
         function renderPagination(containerId, currentPage, totalPages, functionName) {
             const container = document.getElementById(containerId);
             if (!container) return;
             container.innerHTML = '';
             if (totalPages <= 1) return;
+
             const prevBtn = document.createElement('button');
             prevBtn.className = 'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-sm';
             prevBtn.textContent = 'Sebelumnya';
             prevBtn.disabled = currentPage === 1;
             prevBtn.onclick = () => window[functionName](-1);
             container.appendChild(prevBtn);
+
             const info = document.createElement('span');
             info.className = 'px-3 py-1 text-gray-700 text-sm';
             info.textContent = `Halaman ${currentPage} dari ${totalPages}`;
             container.appendChild(info);
+
             const nextBtn = document.createElement('button');
             nextBtn.className = 'px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-sm';
             nextBtn.textContent = 'Selanjutnya';
@@ -1130,7 +1172,7 @@
 
         function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 shadow-lg animate-pulse ` + (type === 'success' ? 'bg-green-500' : 'bg-red-500');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 shadow-lg animate-pulse ` + (type === 'success' ? 'bg-green-500' : (type === 'info' ? 'bg-blue-500' : 'bg-red-500'));
             notification.textContent = message;
             document.body.appendChild(notification);
             setTimeout(() => { notification.classList.remove('animate-pulse'); setTimeout(() => { notification.remove(); }, 2500); }, 500);
@@ -1153,6 +1195,7 @@
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            // Check against loaded users
             const user = users.find(u => u.username === username && u.password === password);
             if (user) {
                 localStorage.setItem('currentUser', JSON.stringify(user));
@@ -1168,7 +1211,7 @@
                 }
                 showNotification(`Selamat datang, ${user.fullName}!`);
             } else {
-                showNotification('Username atau password salah!', 'error');
+                showNotification('Username atau password salah! (Coba Sync jika data belum ada)', 'error');
             }
         });
 
@@ -1182,6 +1225,7 @@
             document.getElementById('loginForm').reset();
         }
 
+        // --- ADMIN DASHBOARD ---
         function initializeAdminDashboard() {
             populateClassDropdowns();
             populateTeacherDropdowns();
@@ -1190,22 +1234,19 @@
             const today = new Date().toISOString().slice(0, 10);
             const thisMonth = today.slice(0, 7);
 
-            document.getElementById('adminJurnalDate').value = today;
-            document.getElementById('adminJurnalMonth').value = thisMonth;
-            document.getElementById('adminAbsenDay').value = today;
-            document.getElementById('adminAbsenMonth').value = thisMonth;
+            if(!document.getElementById('adminJurnalDate').value) document.getElementById('adminJurnalDate').value = today;
+            if(!document.getElementById('adminJurnalMonth').value) document.getElementById('adminJurnalMonth').value = thisMonth;
+            if(!document.getElementById('adminAbsenDay').value) document.getElementById('adminAbsenDay').value = today;
+            if(!document.getElementById('adminAbsenMonth').value) document.getElementById('adminAbsenMonth').value = thisMonth;
 
             loadAdminJurnal();
             loadAdminAbsen();
             loadUserTable();
             loadStudentTable();
             loadClassTable();
+            loadSystemSettings();
             
-            // Ensure systemSettings is loaded/defined before usage if possible, though defaults are handled.
-             if (typeof loadSystemSettings === 'function') {
-                loadSystemSettings();
-            }
-
+            // Event Listeners for Filters
             document.getElementById('adminJurnalFilter').addEventListener('change', function() {
                 const dateInput = document.getElementById('adminJurnalDate');
                 const monthInput = document.getElementById('adminJurnalMonth');
@@ -1288,6 +1329,27 @@
             const selectedMonth = document.getElementById('adminJurnalMonth').value;
             const selectedWeek = document.getElementById('adminJurnalWeek').value;
             
+            // Optimization: If selecting by teacher and month/week, utilize rekapJurnalMap
+            if (selectedGuru && (filterType === 'bulanan' || filterType === 'mingguan') && selectedMonth) {
+                if (rekapJurnalMap[selectedGuru] && rekapJurnalMap[selectedGuru][selectedMonth]) {
+                    let subset = rekapJurnalMap[selectedGuru][selectedMonth];
+                    if (filterType === 'mingguan' && selectedWeek) {
+                         const [year, month] = selectedMonth.split('-');
+                         const weekNumber = parseInt(selectedWeek);
+                         subset = subset.filter(j => {
+                            const journalDate = new Date(j.date);
+                            const firstDay = new Date(year, month - 1, 1);
+                            const weekOfMonth = Math.ceil((journalDate.getDate() + firstDay.getDay()) / 7);
+                            return weekOfMonth === weekNumber;
+                         });
+                    }
+                    return sortJournals(subset);
+                } else {
+                    return [];
+                }
+            }
+
+            // Fallback to normal filter
             let filteredJournals = journals;
             if (selectedGuru) filteredJournals = filteredJournals.filter(j => j.teacher === selectedGuru);
             
@@ -1336,30 +1398,6 @@
             renderPagination('adminJurnalPagination', page, totalPages, 'changeAdminJurnalPage');
             loadTeacherHourStats();
         }
-        
-        // NEW: Delete Filtered Admin Jurnal Function
-        window.deleteFilteredAdminJurnal = function() {
-            const filtered = getFilteredJournals();
-            if (filtered.length === 0) return showNotification('Tidak ada data yang sesuai filter untuk dihapus.', 'error');
-            
-            showConfirmation(`Apakah Anda yakin ingin menghapus ${filtered.length} data jurnal ini? Tindakan ini tidak dapat dibatalkan.`, async () => {
-                try {
-                    const chunks = [];
-                    const temp = [...filtered];
-                    while (temp.length > 0) chunks.push(temp.splice(0, 400));
-                    
-                    for (const chunk of chunks) {
-                        const batch = writeBatch(db);
-                        chunk.forEach(j => batch.delete(doc(db, `artifacts/${appId}/public/data/journals`, j.id)));
-                        await batch.commit();
-                    }
-                    showNotification('Data jurnal berhasil dihapus!');
-                } catch (error) {
-                    console.error(error);
-                    showNotification('Gagal menghapus data.', 'error');
-                }
-            });
-        }
 
         function countHours(jamString) {
             if (!jamString || typeof jamString !== 'string') return 0;
@@ -1407,7 +1445,7 @@
         }
         
         function getAttendanceSummary(isTeacher = false) {
-             const filterType = document.getElementById(isTeacher ? 'teacherAbsenFilter' : 'adminAbsenFilter').value;
+            const filterType = document.getElementById(isTeacher ? 'teacherAbsenFilter' : 'adminAbsenFilter').value;
             const selectedClass = document.getElementById(isTeacher ? 'teacherAbsenKelas' : 'adminAbsenKelas').value;
             const selectedDay = document.getElementById(isTeacher ? 'teacherAbsenDay' : 'adminAbsenDay').value;
             const selectedMonth = document.getElementById(isTeacher ? 'teacherAbsenMonth' : 'adminAbsenMonth').value;
@@ -1417,27 +1455,37 @@
             const toYear = document.getElementById(isTeacher ? 'teacherAbsenToYear' : 'adminAbsenToYear').value;
             
             const attendanceSummary = {};
+            // Init empty summary for scope
             students.forEach(student => {
                 if (!selectedClass || student.class === selectedClass) {
                     attendanceSummary[student.nisn] = { ...student, hadir: 0, izin: 0, sakit: 0, tanpaKet: 0, total: 0 };
                 }
             });
             
-            let filteredAttendance = attendance;
-            if (filterType === 'harian' && selectedDay) {
-                filteredAttendance = attendance.filter(record => record.date === selectedDay);
-            } else if (filterType === 'bulanan' && selectedMonth) {
-                filteredAttendance = attendance.filter(record => record.date.startsWith(selectedMonth));
-            } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
-                const fromDate = new Date(parseInt(fromYear), parseInt(fromMonth) - 1, 1);
-                const toDate = new Date(parseInt(toYear), parseInt(toMonth), 0);
-                filteredAttendance = attendance.filter(record => {
-                    const recordDate = new Date(record.date);
-                    return recordDate >= fromDate && recordDate <= toDate;
-                });
+            // Optimization: If Harian & Class, use Map
+            let filteredAttendance = [];
+
+            if (filterType === 'harian' && selectedDay && selectedClass) {
+                 if (rekapAbsenMap[selectedClass] && rekapAbsenMap[selectedClass][selectedDay]) {
+                     filteredAttendance = [rekapAbsenMap[selectedClass][selectedDay]];
+                 }
+            } else {
+                // Fallback / Complex Filter
+                filteredAttendance = attendance; // Base array
+                 if (filterType === 'harian' && selectedDay) {
+                    filteredAttendance = filteredAttendance.filter(record => record.date === selectedDay);
+                } else if (filterType === 'bulanan' && selectedMonth) {
+                    filteredAttendance = filteredAttendance.filter(record => record.date.startsWith(selectedMonth));
+                } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
+                    const fromDate = new Date(parseInt(fromYear), parseInt(fromMonth) - 1, 1);
+                    const toDate = new Date(parseInt(toYear), parseInt(toMonth), 0);
+                    filteredAttendance = filteredAttendance.filter(record => {
+                        const recordDate = new Date(record.date);
+                        return recordDate >= fromDate && recordDate <= toDate;
+                    });
+                }
+                if (selectedClass) filteredAttendance = filteredAttendance.filter(record => record.class === selectedClass);
             }
-            
-            if (selectedClass) filteredAttendance = filteredAttendance.filter(record => record.class === selectedClass);
             
             filteredAttendance.forEach(record => {
                 record.students.forEach(student => {
@@ -1478,57 +1526,6 @@
             });
             renderPagination('adminAbsenPagination', page, totalPages, 'changeAdminAbsenPage');
         }
-        
-        // NEW: Delete Filtered Admin Absen Function
-        window.deleteFilteredAdminAbsen = function() {
-            const filterType = document.getElementById('adminAbsenFilter').value;
-            const selectedClass = document.getElementById('adminAbsenKelas').value;
-            const selectedDay = document.getElementById('adminAbsenDay').value;
-            const selectedMonth = document.getElementById('adminAbsenMonth').value;
-            const fromMonth = document.getElementById('adminAbsenFromMonth').value;
-            const fromYear = document.getElementById('adminAbsenFromYear').value;
-            const toMonth = document.getElementById('adminAbsenToMonth').value;
-            const toYear = document.getElementById('adminAbsenToYear').value;
-
-            let filteredRecords = attendance;
-
-            if (filterType === 'harian' && selectedDay) {
-                filteredRecords = filteredRecords.filter(r => r.date === selectedDay);
-            } else if (filterType === 'bulanan' && selectedMonth) {
-                filteredRecords = filteredRecords.filter(r => r.date.startsWith(selectedMonth));
-            } else if (filterType === 'tahunan' && fromMonth && fromYear && toMonth && toYear) {
-                const fromDate = new Date(parseInt(fromYear), parseInt(fromMonth) - 1, 1);
-                const toDate = new Date(parseInt(toYear), parseInt(toMonth), 0);
-                filteredRecords = filteredRecords.filter(r => {
-                    const d = new Date(r.date);
-                    return d >= fromDate && d <= toDate;
-                });
-            }
-
-            if (selectedClass) {
-                filteredRecords = filteredRecords.filter(r => r.class === selectedClass);
-            }
-            
-            if (filteredRecords.length === 0) return showNotification('Tidak ada data absensi yang sesuai filter.', 'error');
-
-            showConfirmation(`Apakah Anda yakin ingin menghapus ${filteredRecords.length} catatan absensi? Data statistik siswa akan berubah.`, async () => {
-                 try {
-                    const chunks = [];
-                    const temp = [...filteredRecords];
-                    while (temp.length > 0) chunks.push(temp.splice(0, 400));
-                    
-                    for (const chunk of chunks) {
-                        const batch = writeBatch(db);
-                        chunk.forEach(r => batch.delete(doc(db, `artifacts/${appId}/public/data/attendance`, r.id)));
-                        await batch.commit();
-                    }
-                    showNotification('Data absensi berhasil dihapus!');
-                } catch (error) {
-                    console.error(error);
-                    showNotification('Gagal menghapus data.', 'error');
-                }
-            });
-        }
 
         window.filterAdminJurnal = () => { paginationState.adminJurnal = 1; loadAdminJurnal(); }
         window.filterAdminAbsen = () => { paginationState.adminAbsen = 1; loadAdminAbsen(); }
@@ -1544,7 +1541,6 @@
                 doc.setFontSize(12);
                 doc.text(`Semester ${systemSettings.semester || ''} - ${systemSettings.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
                 
-                // ... (Same header logic as before) ...
                  const filterType = document.getElementById('adminJurnalFilter').value;
                 const selectedDate = document.getElementById('adminJurnalDate').value;
                 const selectedMonth = document.getElementById('adminJurnalMonth').value;
@@ -1568,7 +1564,7 @@
                 let teacherYPos = periodText ? 50 : 40;
                 if (selectedGuru) {
                     const guru = users.find(u => u.username === selectedGuru);
-                    teacherInfo = `Guru: ${guru.fullName}`;
+                    teacherInfo = `Guru: ${guru ? guru.fullName : selectedGuru}`;
                     doc.text(teacherInfo, 10, teacherYPos);
                     teacherYPos += 10;
                 }
@@ -1582,14 +1578,12 @@
                     head: [['No', 'Tanggal', 'Kelas', 'Jam Ke', 'Materi', 'Aktivitas Selama Pembelajaran', 'I', 'S', 'TK']],
                     body: tableData,
                     startY: teacherInfo ? teacherYPos : (periodText ? 50 : 40),
-                    // ... styles ...
                      margin: { left: 10, right: 10 },
                     styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
                     headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
                      columnStyles: { 4: { halign: 'justify' }, 5: { halign: 'justify' } }
                 });
                 
-                // ... footer ...
                 const finalY = doc.lastAutoTable.finalY + 10;
                 doc.text('Kepala Sekolah', 20, finalY);
                 doc.text(systemSettings.kepalaSekolah || '', 20, finalY + 20);
@@ -1603,7 +1597,6 @@
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                // ... (Header Logic Same as before) ...
                  const filterType = document.getElementById('adminAbsenFilter').value;
                 const selectedClass = document.getElementById('adminAbsenKelas').value;
                 const selectedDay = document.getElementById('adminAbsenDay').value;
@@ -1651,7 +1644,6 @@
                     body: tableData,
                     startY: yPos,
                     margin: { left: 10, right: 10 },
-                    // ... styles ...
                     styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
                     headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' },
                     columnStyles: { 2: { halign: 'left' } }
@@ -1688,7 +1680,9 @@
             });
             renderPagination('userPagination', page, totalPages, 'changeUserManagementPage');
         }
-        // ... (User Modal & Delete logic same) ...
+        
+        // --- CRUD LOCAL UPDATES (Manual Updates for Optimistic UI) ---
+
         window.showUserModal = function(userId = null) {
             editingId = userId;
             const modal = document.getElementById('userModal');
@@ -1712,12 +1706,23 @@
             editingId = null;
         }
         window.editUser = (userId) => showUserModal(userId);
+        
         window.deleteUser = function(userId) {
             showConfirmation('Apakah Anda yakin ingin menghapus pengguna ini?', async () => {
-                try { await deleteDoc(doc(db, `artifacts/${appId}/public/data/users`, userId)); showNotification('Pengguna berhasil dihapus!'); }
-                catch (error) { showNotification('Gagal menghapus pengguna.', 'error'); }
+                try { 
+                    // Manual Update
+                    users = users.filter(u => u.id !== userId);
+                    saveToLocalStorage();
+                    loadUserTable();
+                    
+                    // Firestore Update
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/users`, userId)); 
+                    showNotification('Pengguna berhasil dihapus!'); 
+                }
+                catch (error) { showNotification('Gagal menghapus pengguna (akan disinkronkan nanti).', 'error'); }
             });
         }
+        
         document.getElementById('userForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const fullName = document.getElementById('userFullName').value;
@@ -1725,22 +1730,36 @@
             const password = document.getElementById('userPassword').value;
             const role = document.getElementById('userRole').value;
             if (!fullName || !username || !password) return showNotification('Semua field harus diisi!', 'error');
+            
             const userData = { fullName, username, password, role };
             try {
                 const userId = editingId || username;
                 const userRef = doc(db, `artifacts/${appId}/public/data/users`, userId);
-                if (!editingId) {
-                    const docSnap = await getDoc(userRef);
-                    if (docSnap.exists()) return showNotification('Username sudah ada!', 'error');
-                     userData.id = username;
+                
+                if (!editingId && users.some(u => u.id === userId)) {
+                     return showNotification('Username sudah ada!', 'error');
                 }
+                
+                // Firestore
+                userData.id = userId;
                 await setDoc(userRef, userData);
+                
+                // Manual Update
+                if (editingId) {
+                    const idx = users.findIndex(u => u.id === userId);
+                    if(idx > -1) users[idx] = userData;
+                } else {
+                    users.push(userData);
+                }
+                saveToLocalStorage();
+                loadUserTable();
+
                 showNotification(editingId ? 'Pengguna berhasil diperbarui!' : 'Pengguna berhasil ditambahkan!');
                 closeUserModal();
             } catch (error) { showNotification('Gagal menyimpan pengguna.', 'error'); }
         });
 
-        // ... (Student & Class Management functions similar updates) ...
+        // ... (Student & Class Management functions with manual updates) ...
         function loadStudentTable() {
             const tbody = document.getElementById('studentTable');
             if(!tbody) return;
@@ -1778,9 +1797,12 @@
                 tbody.appendChild(row);
             });
             renderPagination('classPagination', page, totalPages, 'changeClassManagementPage');
+            
+             // Update total student count display
+            const total = students.length;
+            document.getElementById('totalStudentCount').textContent = total;
         }
         
-        // ... (Rest of Modal helpers same as original) ...
          window.showStudentModal = function(studentId = null) {
             editingId = studentId;
             const modal = document.getElementById('studentModal');
@@ -1805,12 +1827,24 @@
         }
         window.closeStudentModal = () => { document.getElementById('studentModal').classList.add('hidden'); document.getElementById('studentModal').classList.remove('flex'); editingId = null; }
         window.editStudent = (studentId) => showStudentModal(studentId);
+        
         window.deleteStudent = function(studentId) {
             const studentToDelete = students.find(s => s.id === studentId);
             if (!studentToDelete) return showNotification("Siswa tidak ditemukan.", "error");
             const className = studentToDelete.class;
+            
             showConfirmation('Apakah Anda yakin ingin menghapus siswa ini?', async () => {
-                try { await deleteDoc(doc(db, `artifacts/${appId}/public/data/students`, studentId)); await updateClassStudentCounts([className]); showNotification('Siswa berhasil dihapus!'); }
+                try { 
+                    // Manual Update
+                    students = students.filter(s => s.id !== studentId);
+                    await updateClassStudentCounts([className]); // Updates 'classes' array
+                    saveToLocalStorage();
+                    loadStudentTable();
+                    loadClassTable();
+
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/students`, studentId)); 
+                    showNotification('Siswa berhasil dihapus!'); 
+                }
                 catch (error) { showNotification('Gagal menghapus siswa.', 'error'); }
             });
         }
@@ -1819,29 +1853,65 @@
             if (!classToDelete) return showNotification('Silakan pilih kelas yang akan dihapus siswanya.', 'error');
             const studentsInClass = students.filter(s => s.class === classToDelete);
             if (studentsInClass.length === 0) return showNotification(`Tidak ada siswa di kelas ${classToDelete}.`, 'error');
+            
             showConfirmation(`Apakah Anda yakin ingin menghapus ${studentsInClass.length} siswa dari kelas ${classToDelete}?`, async () => {
-                try { const batch = writeBatch(db); studentsInClass.forEach(student => batch.delete(doc(db, `artifacts/${appId}/public/data/students`, student.id))); await batch.commit(); await updateClassStudentCounts([classToDelete]); showNotification(`Siswa kelas ${classToDelete} berhasil dihapus!`); document.getElementById('deleteStudentClassFilter').value = ''; }
+                try { 
+                    const batch = writeBatch(db);
+                    studentsInClass.forEach(student => batch.delete(doc(db, `artifacts/${appId}/public/data/students`, student.id)));
+                    await batch.commit(); 
+                    
+                     // Manual Update
+                    students = students.filter(s => s.class !== classToDelete);
+                    await updateClassStudentCounts([classToDelete]);
+                    saveToLocalStorage();
+                    loadStudentTable();
+                    loadClassTable();
+
+                    showNotification(`Siswa kelas ${classToDelete} berhasil dihapus!`); 
+                    document.getElementById('deleteStudentClassFilter').value = ''; 
+                }
                 catch (error) { showNotification('Gagal menghapus siswa.', 'error'); }
             });
         }
         window.filterStudents = () => { paginationState.studentManagement = 1; loadStudentTable(); }
+        
         document.getElementById('studentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const nisn = document.getElementById('studentNISN').value;
             const name = document.getElementById('studentName').value;
             const studentClass = document.getElementById('studentClass').value;
             if (!nisn || !name || !studentClass) return showNotification('Semua field harus diisi!', 'error');
+            
             const studentData = { nisn, name, class: studentClass };
             try {
                 const studentId = editingId || nisn;
                 const studentRef = doc(db, `artifacts/${appId}/public/data/students`, studentId);
                 let oldClassName = null;
+                
                 if (editingId) { const s = students.find(x => x.id === editingId); if (s) oldClassName = s.class; }
-                if (!editingId) { const docSnap = await getDoc(studentRef); if (docSnap.exists()) return showNotification('NISN sudah terdaftar!', 'error'); studentData.id = nisn; }
+                if (!editingId && students.some(s => s.id === nisn)) { return showNotification('NISN sudah terdaftar!', 'error'); }
+                
+                studentData.id = studentId;
+                
+                // Firestore
                 await setDoc(studentRef, studentData);
+                
+                // Manual Update
+                if (editingId) {
+                    const idx = students.findIndex(s => s.id === studentId);
+                    if(idx>-1) students[idx] = studentData;
+                } else {
+                    students.push(studentData);
+                }
+                
                 const classesToUpdate = [studentClass];
                 if (oldClassName && oldClassName !== studentClass) classesToUpdate.push(oldClassName);
                 await updateClassStudentCounts(classesToUpdate);
+                
+                saveToLocalStorage();
+                loadStudentTable();
+                loadClassTable();
+
                 showNotification(editingId ? 'Data siswa berhasil diperbarui!' : 'Siswa berhasil ditambahkan!');
                 closeStudentModal();
             } catch (error) { showNotification('Gagal menyimpan data siswa.', 'error'); }
@@ -1851,20 +1921,24 @@
             let targetClasses = classNamesToUpdate.length > 0 ? classNamesToUpdate : classes.map(c => c.name);
             targetClasses = [...new Set(targetClasses)];
             if (targetClasses.length === 0) return;
+            
             try {
                 const batch = writeBatch(db);
                 for (const className of targetClasses) {
-                    const classDoc = classes.find(c => c.name === className);
-                    if (classDoc) {
-                        const count = students.filter(s => s.class === className).length;
-                        batch.update(doc(db, `artifacts/${appId}/public/data/classes`, classDoc.id), { studentCount: count });
+                    const count = students.filter(s => s.class === className).length;
+                    
+                    // Update Local
+                    const classIdx = classes.findIndex(c => c.name === className);
+                    if (classIdx > -1) {
+                         classes[classIdx].studentCount = count;
+                         batch.update(doc(db, `artifacts/${appId}/public/data/classes`, classes[classIdx].id), { studentCount: count });
                     }
                 }
                 await batch.commit();
+                saveToLocalStorage(); // Ensure counts are saved locally
             } catch (error) { console.error("Error updating student counts:", error); }
         }
         
-        // ... (Class Modal & Logic) ...
          window.showClassModal = function(classId = null) {
             editingId = classId;
             const modal = document.getElementById('classModal');
@@ -1874,11 +1948,22 @@
         }
         window.closeClassModal = () => { document.getElementById('classModal').classList.add('hidden'); document.getElementById('classModal').classList.remove('flex'); editingId = null; }
         window.editClass = (classId) => showClassModal(classId);
+        
         window.deleteClass = function(classId) {
             const cls = classes.find(c => c.id === classId);
             if (students.filter(s => s.class === cls.name).length > 0) return showNotification('Tidak dapat menghapus kelas yang masih memiliki siswa!', 'error');
-            showConfirmation('Apakah Anda yakin ingin menghapus kelas ini?', async () => { await deleteDoc(doc(db, `artifacts/${appId}/public/data/classes`, classId)); showNotification('Kelas berhasil dihapus!'); });
+            
+            showConfirmation('Apakah Anda yakin ingin menghapus kelas ini?', async () => { 
+                // Manual
+                classes = classes.filter(c => c.id !== classId);
+                saveToLocalStorage();
+                loadClassTable();
+                
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/classes`, classId)); 
+                showNotification('Kelas berhasil dihapus!'); 
+            });
         }
+        
         document.getElementById('classForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const className = document.getElementById('className').value.toUpperCase();
@@ -1886,17 +1971,32 @@
             try {
                 if (editingId) {
                     const oldClass = classes.find(c => c.id === editingId);
+                    
+                    // Manual Update Students in this class
+                    students.forEach(s => { if(s.class === oldClass.name) s.class = className; });
+                    
+                    // Manual Update Class
+                    const clsIdx = classes.findIndex(c => c.id === editingId);
+                    if(clsIdx > -1) classes[clsIdx].name = className;
+
                     await updateDoc(doc(db, `artifacts/${appId}/public/data/classes`, editingId), { name: className });
                     const batch = writeBatch(db);
-                    students.filter(s => s.class === oldClass.name).forEach(student => batch.update(doc(db, `artifacts/${appId}/public/data/students`, student.id), { class: className }));
+                    students.filter(s => s.class === className).forEach(student => batch.update(doc(db, `artifacts/${appId}/public/data/students`, student.id), { class: className }));
                     await batch.commit();
+                    
                     showNotification('Kelas berhasil diperbarui!');
                 } else {
                     if (classes.some(c => c.name === className)) return showNotification('Nama kelas sudah ada!', 'error');
                     const classRef = doc(collection(db, `artifacts/${appId}/public/data/classes`));
-                    await setDoc(classRef, { id: classRef.id, name: className, studentCount: 0 });
+                    const newClass = { id: classRef.id, name: className, studentCount: 0 };
+                    
+                    // Manual Add
+                    classes.push(newClass);
+                    await setDoc(classRef, newClass);
                     showNotification('Kelas berhasil ditambahkan!');
                 }
+                saveToLocalStorage();
+                loadClassTable();
                 closeClassModal();
             } catch (error) { showNotification('Gagal menyimpan data kelas.', 'error'); }
         });
@@ -1914,50 +2014,61 @@
             modal.classList.remove('hidden'); modal.classList.add('flex');
         }
         window.closePromoteModal = () => document.getElementById('promoteModal').classList.add('hidden');
+        
         document.getElementById('promoteForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const fromClass = document.getElementById('promoteFromClass').value;
             const toClass = document.getElementById('promoteToClass').value;
             if (!fromClass || !toClass) return showNotification('Pilih kelas asal dan tujuan!', 'error');
+            
             const studentsToPromote = students.filter(s => s.class === fromClass);
             if (studentsToPromote.length === 0) return showNotification('Tidak ada siswa di kelas tersebut!', 'error');
+            
             showConfirmation(`Pindahkan ${studentsToPromote.length} siswa dari kelas ${fromClass} ke ${toClass}?`, async () => {
                 const batch = writeBatch(db);
-                studentsToPromote.forEach(student => batch.update(doc(db, `artifacts/${appId}/public/data/students`, student.id), { class: toClass }));
+                studentsToPromote.forEach(student => {
+                    student.class = toClass; // Manual Update
+                    batch.update(doc(db, `artifacts/${appId}/public/data/students`, student.id), { class: toClass });
+                });
                 await batch.commit();
-                await updateClassStudentCounts([fromClass, toClass]);
+                await updateClassStudentCounts([fromClass, toClass]); // This saves to LS
                 showNotification(`${studentsToPromote.length} siswa berhasil dipindahkan!`);
             });
             closePromoteModal();
         });
+        
         function loadSystemSettings() {
             document.getElementById('semester').value = systemSettings.semester || 'ganjil';
             document.getElementById('tahunAjaran').value = systemSettings.tahunAjaran || '';
             document.getElementById('kepalaSekolah').value = systemSettings.kepalaSekolah || '';
         }
         window.saveSystemSettings = async function() {
-            await setDoc(doc(db, `artifacts/${appId}/public/data/settings/main`), {
+            systemSettings = {
                 semester: document.getElementById('semester').value,
                 tahunAjaran: document.getElementById('tahunAjaran').value,
                 kepalaSekolah: document.getElementById('kepalaSekolah').value,
-            });
+            };
+            saveToLocalStorage();
+            await setDoc(doc(db, `artifacts/${appId}/public/data/settings/main`), systemSettings);
             showNotification('Pengaturan sistem berhasil disimpan!');
         }
 
-        // ... (Teacher Dashboard & Tabs) ...
+        // --- TEACHER DASHBOARD ---
         function initializeTeacherDashboard() {
             populateClassDropdowns();
             populateYearDropdowns();
             const today = formatDate(new Date());
             const thisMonth = today.slice(0, 7);
-            document.getElementById('jurnalTanggal').value = today;
-            document.getElementById('absenTanggal').value = today;
-            document.getElementById('teacherJurnalDate').value = today;
-            document.getElementById('teacherJurnalMonth').value = thisMonth;
-            document.getElementById('teacherAbsenDay').value = today;
-            document.getElementById('teacherAbsenMonth').value = thisMonth;
-            document.getElementById('absensiInputTanggal').value = today;
-            document.getElementById('absensiInputBulan').value = thisMonth;
+            
+            if(!document.getElementById('jurnalTanggal').value) document.getElementById('jurnalTanggal').value = today;
+            if(!document.getElementById('absenTanggal').value) document.getElementById('absenTanggal').value = today;
+            if(!document.getElementById('teacherJurnalDate').value) document.getElementById('teacherJurnalDate').value = today;
+            if(!document.getElementById('teacherJurnalMonth').value) document.getElementById('teacherJurnalMonth').value = thisMonth;
+            if(!document.getElementById('teacherAbsenDay').value) document.getElementById('teacherAbsenDay').value = today;
+            if(!document.getElementById('teacherAbsenMonth').value) document.getElementById('teacherAbsenMonth').value = thisMonth;
+            if(!document.getElementById('absensiInputTanggal').value) document.getElementById('absensiInputTanggal').value = today;
+            if(!document.getElementById('absensiInputBulan').value) document.getElementById('absensiInputBulan').value = thisMonth;
+            
             loadTeacherJurnal();
             loadTeacherAbsen();
             filterDaftarAbsensi();
@@ -2000,14 +2111,9 @@
             event.target.classList.add('border-blue-500', 'text-blue-600');
             
             if (tabName === 'input-jurnal') {
-                 // Auto update journal counts if data exists for selected date/class
                  updateJurnalAbsenRekap(false);
             }
-            if (tabName === 'input-jurnal' || tabName === 'input-absen') {
-                const currentDate = formatDate(new Date());
-                if (tabName === 'input-jurnal' && !document.getElementById('jurnalTanggal').value) document.getElementById('jurnalTanggal').value = currentDate;
-                else if (tabName === 'input-absen' && !document.getElementById('absenTanggal').value) document.getElementById('absenTanggal').value = currentDate;
-            }
+            // Keep dates persisted from init
         }
 
         function populateClassDropdowns() {
@@ -2028,13 +2134,15 @@
             });
         }
 
-        // ... (Jurnal Management & Logic) ...
+        // --- Jurnal CRUD Manual Updates ---
         document.getElementById('jurnalForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const tanggal = document.getElementById('jurnalTanggal').value;
             const kelas = document.getElementById('jurnalKelas').value;
+            
             const attendanceRecord = attendance.find(record => record.date === tanggal && record.class === kelas);
             if (!attendanceRecord) return showNotification('Harap isi input absen terlebih dahulu agar jurnal bisa tersimpan.', 'error');
+            
             const journalData = {
                 date: tanggal, class: kelas,
                 jam: document.getElementById('jurnalJam').value,
@@ -2048,8 +2156,26 @@
             };
             if (!journalData.date || !journalData.class || !journalData.jam || !journalData.materi || !journalData.aktivitas) return showNotification('Harap isi semua field yang wajib (*)!', 'error');
             
-            if (editingJournalId) { await updateDoc(doc(db, `artifacts/${appId}/public/data/journals`, editingJournalId), journalData); editingJournalId = null; showNotification('Jurnal berhasil diperbarui!'); }
-            else { await addDoc(collection(db, `artifacts/${appId}/public/data/journals`), journalData); showNotification('Jurnal berhasil disimpan!'); }
+            if (editingJournalId) { 
+                journalData.id = editingJournalId;
+                // Manual Update
+                const idx = journals.findIndex(j => j.id === editingJournalId);
+                if(idx > -1) journals[idx] = journalData;
+                
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/journals`, editingJournalId), journalData); 
+                editingJournalId = null; 
+                showNotification('Jurnal berhasil diperbarui!'); 
+            } else { 
+                const newRef = await addDoc(collection(db, `artifacts/${appId}/public/data/journals`), journalData); 
+                journalData.id = newRef.id;
+                // Manual Add
+                journals.push(journalData);
+                showNotification('Jurnal berhasil disimpan!'); 
+            }
+            
+            saveToLocalStorage();
+            buildIndexes(); // Rebuild index for stats
+            
             document.getElementById('jurnalForm').reset();
             document.getElementById('jurnalTanggal').value = journalData.date;
             document.getElementById('jurnalKelas').value = journalData.class;
@@ -2057,28 +2183,44 @@
         });
 
         function loadTeacherJurnal() {
-             // Same as before but update Monthly Stats
             const tbody = document.getElementById('teacherJurnalTable');
             tbody.innerHTML = '';
             const filterType = document.getElementById('teacherJurnalFilter').value;
             const selectedDate = document.getElementById('teacherJurnalDate').value;
             const selectedMonth = document.getElementById('teacherJurnalMonth').value;
             const selectedWeek = document.getElementById('teacherJurnalWeek').value;
-            let filteredJournals = journals.filter(j => j.teacher === currentUser);
             
-            if (filterType === 'harian' && selectedDate) {
-                filteredJournals = filteredJournals.filter(j => j.date === selectedDate);
-            } else if (filterType === 'mingguan' && selectedMonth && selectedWeek) {
-                const [year, month] = selectedMonth.split('-');
-                const weekNumber = parseInt(selectedWeek);
-                filteredJournals = filteredJournals.filter(j => {
-                    const journalDate = new Date(j.date);
-                    if (journalDate.getFullYear() != year || journalDate.getMonth() + 1 != month) return false;
-                    const firstDay = new Date(year, month - 1, 1);
-                    const weekOfMonth = Math.ceil((journalDate.getDate() + firstDay.getDay()) / 7);
-                    return weekOfMonth === weekNumber;
-                });
-            } else if (filterType === 'bulanan' && selectedMonth) filteredJournals = filteredJournals.filter(j => j.date.startsWith(selectedMonth));
+            // Optimization: Use rekapJurnalMap for current teacher
+            let filteredJournals = [];
+            
+            if (currentUser && rekapJurnalMap[currentUser]) {
+                 if (filterType === 'bulanan' && selectedMonth) {
+                     if (rekapJurnalMap[currentUser][selectedMonth]) {
+                         filteredJournals = rekapJurnalMap[currentUser][selectedMonth];
+                     }
+                 } else if (filterType === 'mingguan' && selectedMonth && selectedWeek) {
+                     if (rekapJurnalMap[currentUser][selectedMonth]) {
+                        const [year, month] = selectedMonth.split('-');
+                        const weekNumber = parseInt(selectedWeek);
+                        filteredJournals = rekapJurnalMap[currentUser][selectedMonth].filter(j => {
+                            const journalDate = new Date(j.date);
+                            const firstDay = new Date(year, month - 1, 1);
+                            const weekOfMonth = Math.ceil((journalDate.getDate() + firstDay.getDay()) / 7);
+                            return weekOfMonth === weekNumber;
+                        });
+                     }
+                 } else if (filterType === 'harian' && selectedDate) {
+                     const month = selectedDate.substring(0, 7);
+                     if(rekapJurnalMap[currentUser][month]) {
+                         filteredJournals = rekapJurnalMap[currentUser][month].filter(j => j.date === selectedDate);
+                     }
+                 } else {
+                     // Fallback if no filter selected or complicated logic
+                     filteredJournals = journals.filter(j => j.teacher === currentUser);
+                 }
+            } else {
+                 filteredJournals = journals.filter(j => j.teacher === currentUser);
+            }
 
             const sortedJournals = sortJournals(filteredJournals);
             const page = paginationState.teacherJurnal;
@@ -2120,14 +2262,16 @@
             const sakitInput = document.getElementById('jurnalSakit');
             const tanpaKetInput = document.getElementById('jurnalTanpaKet');
             
-            // If class not selected, maybe try to infer from recent inputs or just return?
-            // The prompt says "automatically fetch...". If inputs are empty we can't fetch.
-            if (!tanggal || !kelas) {
-                 // If user hasn't selected class, we can't fill. Just return silently.
-                 return;
-            }
+            if (!tanggal || !kelas) return;
             
-            const attendanceRecord = attendance.find(record => record.date === tanggal && record.class === kelas);
+            // Optimization: Use Map
+            let attendanceRecord = null;
+            if(rekapAbsenMap[kelas] && rekapAbsenMap[kelas][tanggal]) {
+                attendanceRecord = rekapAbsenMap[kelas][tanggal];
+            } else {
+                 attendanceRecord = attendance.find(record => record.date === tanggal && record.class === kelas);
+            }
+
             if (attendanceRecord && attendanceRecord.students) {
                 let izinCount = 0, sakitCount = 0, tanpaKetCount = 0;
                 attendanceRecord.students.forEach(student => {
@@ -2140,19 +2284,25 @@
                 tanpaKetInput.value = tanpaKetCount;
                 if(showSuccessNotification) showNotification('Data absensi berhasil dimuat.', 'success');
             } else {
-                // If it's automatic check (e.g. tab switch), we might not want to error if data missing
-                // But user asked to "fill", implies if data exists. 
-                // Reset if no data found?
                 izinInput.value = 0; sakitInput.value = 0; tanpaKetInput.value = 0;
                 if(showSuccessNotification) showNotification('Data absensi untuk tanggal dan kelas ini tidak ditemukan.', 'error');
             }
         }
-        window.deleteJournal = function(journalId) { showConfirmation('Apakah Anda yakin ingin menghapus jurnal ini?', async () => { await deleteDoc(doc(db, `artifacts/${appId}/public/data/journals`, journalId)); showNotification('Jurnal berhasil dihapus!'); }); }
+        
+        window.deleteJournal = function(journalId) { 
+            showConfirmation('Apakah Anda yakin ingin menghapus jurnal ini?', async () => { 
+                // Manual
+                journals = journals.filter(j => j.id !== journalId);
+                saveToLocalStorage();
+                buildIndexes(); // Refresh stats
+                loadTeacherJurnal();
+                
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/journals`, journalId)); 
+                showNotification('Jurnal berhasil dihapus!'); 
+            }); 
+        }
         window.filterTeacherJurnal = () => { paginationState.teacherJurnal = 1; loadTeacherJurnal(); }
         window.printTeacherJurnal = function() {
-             // Copy logic from original, use getFilteredJournals logic but applied to currentUser only
-             // ... (Implemented in original, assuming it's correct as per instruction)
-             // Actually re-implementing to be safe
              try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [215.5, 330] });
@@ -2162,7 +2312,7 @@
                 const selectedMonth = document.getElementById('teacherJurnalMonth').value;
                 const selectedWeek = document.getElementById('teacherJurnalWeek').value;
                 let filteredJournals = journals.filter(j => j.teacher === currentUser);
-                // ... filter logic ...
+                
                  if (filterType === 'harian' && selectedDate) filteredJournals = filteredJournals.filter(j => j.date === selectedDate);
                  else if (filterType === 'mingguan' && selectedMonth && selectedWeek) {
                     const [year, month] = selectedMonth.split('-');
@@ -2183,7 +2333,6 @@
                 doc.text(`Guru: ${teacherName}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
                 doc.text(`Semester ${systemSettings.semester || ''} - ${systemSettings.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 50, { align: 'center' });
                 
-                // ... table generation ...
                 const tableData = sortJournals(filteredJournals).map((journal, i) => [ i + 1, formatDateToDDMMYYYY(journal.date), journal.class, journal.jam || '-', journal.materi || '-', journal.aktivitas || '-', journal.izin, journal.sakit, journal.tanpaKet ]);
                 doc.autoTable({ head: [['No', 'Tanggal', 'Kelas', 'Jam Ke', 'Materi', 'Aktivitas Selama Pembelajaran', 'I', 'S', 'TK']], body: tableData, startY: 70, margin: { left: 10, right: 10 }, styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' }, headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', halign: 'center' }, columnStyles: { 4: { halign: 'justify' }, 5: { halign: 'justify' } } });
                 
@@ -2195,7 +2344,7 @@
              } catch (e) { showNotification('Gagal membuat PDF', 'error'); }
         }
 
-        // ... (Attendance & Modal Logic same as original) ...
+        // ... (Attendance & Modal Logic) ...
         let editingAttendanceId = null;
         function renderAttendanceList() {
             const tbody = document.getElementById('attendanceListTable');
@@ -2213,7 +2362,7 @@
             });
             renderPagination('teacherInputAbsenPagination', page, totalPages, 'changeTeacherInputAbsenPage');
         }
-        // ... (Helpers for attendance) ...
+        
         window.closeAttendanceDetailModal = () => document.getElementById('attendanceDetailModal').classList.add('hidden');
         window.lihatAbsensi = function(id) {
             const data = attendance.find(a => a.id === id);
@@ -2232,7 +2381,18 @@
                 showNotification('Data absensi dimuat untuk diedit!');
             }
         }
-        window.deleteAttendance = function(attendanceId) { showConfirmation('Apakah Anda yakin ingin menghapus data absensi ini?', async () => { await deleteDoc(doc(db, `artifacts/${appId}/public/data/attendance`, attendanceId)); showNotification('Data absensi berhasil dihapus!'); }); }
+        window.deleteAttendance = function(attendanceId) { 
+            showConfirmation('Apakah Anda yakin ingin menghapus data absensi ini?', async () => { 
+                // Manual
+                attendance = attendance.filter(a => a.id !== attendanceId);
+                saveToLocalStorage();
+                buildIndexes();
+                renderAttendanceList();
+                
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/attendance`, attendanceId)); 
+                showNotification('Data absensi berhasil dihapus!'); 
+            }); 
+        }
         
         window.loadStudentsForAbsen = async function() {
             const kelas = document.getElementById('absenKelas').value;
@@ -2255,13 +2415,30 @@
             const attendanceData = students.filter(s => s.class === kelas).map(student => ({ nisn: student.nisn, name: student.name, status: document.querySelector(`input[name="absen_${student.nisn}"]:checked`).value }));
             const attendanceRecord = { date: tanggal, class: kelas, teacher: currentUser, students: attendanceData };
             const docId = editingAttendanceId || `${tanggal}_${kelas}`;
+            attendanceRecord.id = docId;
+
+            // Manual Update
+            if (editingAttendanceId) {
+                const idx = attendance.findIndex(a => a.id === editingAttendanceId);
+                if(idx > -1) attendance[idx] = attendanceRecord;
+            } else {
+                 // Check if already exists (overwrite logic similar to setDoc)
+                const existingIdx = attendance.findIndex(a => a.id === docId);
+                if (existingIdx > -1) attendance[existingIdx] = attendanceRecord;
+                else attendance.push(attendanceRecord);
+            }
+            saveToLocalStorage();
+            buildIndexes();
+            filterDaftarAbsensi(); // refresh list
+            
             await setDoc(doc(db, `artifacts/${appId}/public/data/attendance`, docId), attendanceRecord);
+            
             const message = editingAttendanceId ? 'Absensi berhasil diperbarui!' : 'Absensi berhasil disimpan!';
             showNotification(message);
-            loadStudentsForAbsen(); // Refresh visual state without reload
+            editingAttendanceId = null;
+            loadStudentsForAbsen(); // Refresh visual state
         }
         
-        // ... (Teacher Absen Load/Filter/Print) ...
         function loadTeacherAbsen() {
             const tbody = document.getElementById('teacherAbsenTable');
             tbody.innerHTML = '';
@@ -2281,15 +2458,13 @@
         }
         window.filterTeacherAbsen = () => { paginationState.teacherAbsen = 1; loadTeacherAbsen(); }
         window.printTeacherAbsen = function() {
-            // Ensure this uses getAttendanceSummary logic (FULL DATA) not table DOM
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                // ... (Header logic same as printAdminAbsen but with 'Guru' name) ...
                 const teacherName = users.find(u => u.username === currentUser).fullName;
                 doc.setFont('times', 'normal'); doc.setFontSize(16); doc.text('REKAP ABSENSI SISWA', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' }); doc.setFontSize(12); doc.text(`Guru: ${teacherName}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' }); doc.text(`Semester ${systemSettings.semester || ''} - ${systemSettings.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 40, { align: 'center' });
                 
-                const sortedData = getAttendanceSummary(true); // Uses Teacher filters
+                const sortedData = getAttendanceSummary(true); 
                 let no = 1;
                 const tableData = sortedData.map(student => { const persentase = student.total > 0 ? ((student.hadir / student.total) * 100).toFixed(1) : '0.0'; return [no++, student.nisn, student.name, student.hadir, student.izin, student.sakit, student.tanpaKet, `${persentase}%`]; });
                 doc.autoTable({ head: [['No', 'NISN', 'Nama', 'H', 'I', 'S', 'TK', 'Hadir %']], body: tableData, startY: 50, margin: { left: 10, right: 10 }, styles: { fontSize: 10, font: 'times', lineColor: [0, 0, 0], lineWidth: 0.1, halign: 'center' }, headStyles: { fontSize: 10, font: 'times', fontStyle: 'bold', halign: 'center' }, columnStyles: { 2: { halign: 'left' } } });
@@ -2309,13 +2484,13 @@
             renderAttendanceList();
         }
 
-        // --- DOWNLOAD FUNCTIONS (UPDATED FOR FULL DATA) ---
+        // --- DOWNLOAD FUNCTIONS ---
         window.downloadAdminJurnalCSV = function() {
-            const filteredJournals = getFilteredJournals(); // Full data
+            const filteredJournals = getFilteredJournals();
             let csv = ["Tanggal,Guru,Kelas,Jam Ke,Materi,Aktivitas,Izin,Sakit,Tanpa Ket"];
             
             filteredJournals.forEach(j => {
-                const jam = j.jam ? `'${j.jam}` : "'-"; // Add single quote to prevent Excel date conversion
+                const jam = j.jam ? `'${j.jam}` : "'-";
                 const row = [
                     `"${formatDateToDDMMYYYY(j.date)}"`,
                     `"${j.teacherName}"`,
@@ -2337,7 +2512,7 @@
         }
 
         window.downloadAdminAbsenExcel = function() {
-            const summaryData = getAttendanceSummary(false); // Full data based on filters
+            const summaryData = getAttendanceSummary(false); 
             const excelData = summaryData.map((s, i) => ({
                 "No": i + 1,
                 "NISN": s.nisn,
@@ -2397,12 +2572,19 @@
         function updateTeacherMonthlyStats() {
             const user = currentUser;
             if (!user) return;
-            const userJournals = journals.filter(j => j.teacher === user);
+            // Use denormalized map for speed
             const monthlyHours = {};
-            userJournals.forEach(j => {
-                const monthKey = j.date.substring(0, 7).split('-').reverse().join('-');
-                monthlyHours[monthKey] = (monthlyHours[monthKey] || 0) + countHours(j.jam);
-            });
+            
+            if (rekapJurnalMap[user]) {
+                Object.keys(rekapJurnalMap[user]).forEach(month => {
+                     let total = 0;
+                     rekapJurnalMap[user][month].forEach(j => total += countHours(j.jam));
+                     // Convert month YYYY-MM to nice display if needed, but current usage is fine
+                     const displayMonth = month.split('-').reverse().join('-');
+                     monthlyHours[displayMonth] = total;
+                });
+            }
+
             const tableBody = document.getElementById('teacherMonthlyStatsTable');
             tableBody.innerHTML = '';
             const sortedEntries = Object.entries(monthlyHours).sort((a, b) => b[0].localeCompare(a[0]));
@@ -2420,7 +2602,7 @@
         
         window.importFromGoogleSheet = async function() {
             showConfirmation('Impor data siswa dan kelas? Data yang sama akan diperbarui.', async () => {
-                showNotification('Mengimpor data...');
+                showNotification('Mengimpor data...', 'info');
                 const url = 'https://script.google.com/macros/s/AKfycbx44kJLgw8i0cMe9Pbj5A0VTa_OVnuLXJUGXjRXDSrPKVCaZcM30kFBqmUDz0BRAo_uSQ/exec';
                 try {
                     const response = await fetch(url);
@@ -2432,11 +2614,37 @@
                     const uniqueClasses = new Set(classes.map(c => c.name));
                     data.forEach(s => { if(s.kelas) uniqueClasses.add(String(s.kelas).trim()); });
                     
-                    uniqueClasses.forEach(name => { if(!classes.find(c => c.name === name)) { const r = doc(collection(db, `artifacts/${appId}/public/data/classes`)); batch.set(r, { id: r.id, name }); } });
-                    data.forEach(s => { if(s.nisn && s.nama && s.kelas) batch.set(doc(db, `artifacts/${appId}/public/data/students`, String(s.nisn)), { id: String(s.nisn), nisn: String(s.nisn), name: String(s.nama).trim(), class: String(s.kelas).trim() }); });
+                    // Add new classes locally
+                    uniqueClasses.forEach(name => { 
+                        if(!classes.find(c => c.name === name)) { 
+                            const r = doc(collection(db, `artifacts/${appId}/public/data/classes`)); 
+                            const newClass = { id: r.id, name, studentCount: 0 };
+                            classes.push(newClass);
+                            batch.set(r, newClass); 
+                        } 
+                    });
+
+                    data.forEach(s => { 
+                        if(s.nisn && s.nama && s.kelas) {
+                            const nisn = String(s.nisn);
+                            const studentData = { id: nisn, nisn, name: String(s.nama).trim(), class: String(s.kelas).trim() };
+                            
+                            // Local update
+                            const idx = students.findIndex(st => st.id === nisn);
+                            if(idx>-1) students[idx] = studentData;
+                            else students.push(studentData);
+                            
+                            batch.set(doc(db, `artifacts/${appId}/public/data/students`, nisn), studentData); 
+                        } 
+                    });
                     
                     await batch.commit();
-                    await updateClassStudentCounts();
+                    await updateClassStudentCounts(); // Recalculate counts
+                    
+                    saveToLocalStorage();
+                    loadStudentTable();
+                    loadClassTable();
+                    
                     showNotification('Impor berhasil!', 'success');
                 } catch (error) { console.error(error); showNotification('Gagal mengimpor data.', 'error'); }
             });
